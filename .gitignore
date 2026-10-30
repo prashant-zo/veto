@@ -1,0 +1,25 @@
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+kubeconfig*
+
+# local
+.DS_Store
+.idea/
+.vscode/
+.local/
+eval/runs/
