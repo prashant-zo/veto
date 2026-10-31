@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks
+.PHONY: help state sync scan hooks smoke
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -14,3 +14,6 @@ scan: ## scan git history for secrets
 
 hooks: ## run all pre-commit hooks
 	pre-commit run --all-files
+
+smoke: ## call the model and check json output
+	uv run --env-file .env python scripts/smoke_baseten.py

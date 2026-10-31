@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Release gate for Argo Rollouts canaries"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "openai>=3.42.0",
+]
 
 [build-system]
 requires = ["hatchling"]
