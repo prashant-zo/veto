@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 1: read license, ask friends for blind test prs
+part 1: ask friends for blind test prs
 
 ## plan
 1. repo, setup, smoke test
@@ -20,6 +20,7 @@ part 1: read license, ask friends for blind test prs
 - state file, adrs, makefile
 - smoke test against baseten: 5 of 5 abort, same ids, mean 3.3s
 - meta api card fixed, smoke test: 5 of 5 abort, same ids, mean 3.7s
+- muse license read, see adr 0005
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -47,6 +48,8 @@ part 1: read license, ask friends for blind test prs
 - no secrets in git, keys only in .env files or k8s secrets
 - read a file before changing it
 - only muse in demo, eval and site until judging ends
+- show "Built with Muse Spark Open" in readme and site
+- veto messages say they come from veto, never pose as a person
 
 ## open
 - glimmer access not confirmed
