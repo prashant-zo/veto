@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 1: smoke test against baseten
+part 1: meta card retry, read license, ask friends for blind test prs
 
 ## plan
 1. repo, setup, smoke test
@@ -18,6 +18,7 @@ part 1: smoke test against baseten
 - project layout, python 3.12 with uv
 - gitleaks pre-commit hook, tested with a fake token
 - state file, adrs, makefile
+- smoke test against baseten: 5 of 5 abort, same ids, mean 3.3s
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -29,6 +30,11 @@ part 1: smoke test against baseten
 - kubectl-argo-rollouts comes from argoproj/tap, tap not trusted yet
 - git user prashant-zo, noreply email, push over ssh
 - model: meta-models/muse-spark-open-1026 at https://inference.baseten.co/v1, key works only for this model
+- env vars: VETO_MODEL_BASE_URL, VETO_MODEL_NAME, VETO_MODEL_API_KEY (in .env, gitignored)
+- openai python client 3.42.0, chat.completions works
+- model reasoning comes in message.reasoning_content, message.content is clean json
+- response_format json_object is accepted
+- latency 2 to 4.5s per call on a small bundle
 - cluster name: veto, context kind-veto
 - demo shop repo: prashant-zo/veto-demo-shop, not created yet
 - image tag format: pr-<number>-<shortsha>
