@@ -8,7 +8,7 @@ cat docs/state.md
 echo
 echo "## git"
 echo "branch: $(git branch --show-current)"
-git log --oneline -10
+git --no-pager log --oneline -10
 echo
 echo "uncommitted:"
 git status --short
