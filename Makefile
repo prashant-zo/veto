@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -29,6 +29,14 @@ down: ## delete the kind cluster
 
 ROLLOUTS_CHART := 2.43.8
 
-stack: ## install argo rollouts and the observability stack
+rollouts: ## install argo rollouts
 	helm repo add argo https://argoproj.github.io/argo-helm --force-update
 	helm upgrade --install argo-rollouts argo/argo-rollouts -n argo-rollouts --create-namespace --version $(ROLLOUTS_CHART) -f demo/stack/argo-rollouts.yaml --wait
+
+PROM_CHART := 29.40.3
+
+prometheus: ## install prometheus (server only)
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update
+	helm upgrade --install prometheus prometheus-community/prometheus -n monitoring --create-namespace --version $(PROM_CHART) -f demo/stack/prometheus.yaml --wait
+
+stack: rollouts prometheus ## install the whole stack

@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 2: install argo rollouts
+part 2: install loki
 
 ## plan
 1. repo, setup, smoke test
@@ -23,6 +23,7 @@ part 2: install argo rollouts
 - muse license read, see adr 0005
 - asked friends for blind test prs
 - kind cluster veto up, k8s 1.35.0
+- argo rollouts and prometheus installed
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -31,7 +32,7 @@ part 2: install argo rollouts
 - python 3.12.13 via uv, system python is 3.14 and unused
 - colima 0.10.1, default profile 4 cpu 5 GiB, docker runtime
 - kind 0.31.0, kubectl 1.36.0, helm 3.20.2, gitleaks 8.30.1, gh 2.103.3, pre-commit 4.6.0
-- kubectl-argo-rollouts comes from argoproj/tap, tap not trusted yet
+- kubectl-argo-rollouts plugin v1.10.0 from argoproj/tap, trusted
 - git user prashant-zo, noreply email, push over ssh
 - env vars: VETO_MODEL_BASE_URL, VETO_MODEL_NAME, VETO_MODEL_API_KEY
 - openai python client 3.42.0, chat.completions works on both providers
@@ -43,6 +44,8 @@ part 2: install argo rollouts
 - latency 3 to 4.5s per call on a small bundle, both providers
 - cluster name: veto, context kind-veto
 - kind node kindest/node:v1.35.0, containerd 2.2.0, one control-plane node
+- argo rollouts chart 2.43.8, app v1.10.1, namespace argo-rollouts
+- prometheus chart 29.40.3, server only, namespace monitoring, svc prometheus-server port 80
 - idle vm memory: 0.8 GiB used of 4.9 GiB
 - demo shop repo: prashant-zo/veto-demo-shop, not created yet
 - image tag format: pr-<number>-<shortsha>
