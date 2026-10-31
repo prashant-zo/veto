@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 1: ask friends for blind test prs
+part 2: resize colima and create the kind cluster
 
 ## plan
 1. repo, setup, smoke test
@@ -21,6 +21,7 @@ part 1: ask friends for blind test prs
 - smoke test against baseten: 5 of 5 abort, same ids, mean 3.3s
 - meta api card fixed, smoke test: 5 of 5 abort, same ids, mean 3.7s
 - muse license read, see adr 0005
+- asked friends for blind test prs
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -52,5 +53,6 @@ part 1: ask friends for blind test prs
 - veto messages say they come from veto, never pose as a person
 
 ## open
+- blind test prs: send friends the shop repo link once it exists
 - glimmer access not confirmed
 - modal and fireworks credits pending
