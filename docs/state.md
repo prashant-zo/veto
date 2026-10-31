@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 2: resize colima and create the kind cluster
+part 2: install argo rollouts
 
 ## plan
 1. repo, setup, smoke test
@@ -22,13 +22,14 @@ part 2: resize colima and create the kind cluster
 - meta api card fixed, smoke test: 5 of 5 abort, same ids, mean 3.7s
 - muse license read, see adr 0005
 - asked friends for blind test prs
+- kind cluster veto up, k8s 1.35.0
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
 - repo path: /Users/prashant/Documents/The Helios Project/DevOps/Project/veto (has spaces, always quote)
 - all projects live in .../DevOps/Project/
 - python 3.12.13 via uv, system python is 3.14 and unused
-- colima 0.10.1, default profile 2 cpu 4 GiB, resize before cluster
+- colima 0.10.1, default profile 4 cpu 5 GiB, docker runtime
 - kind 0.31.0, kubectl 1.36.0, helm 3.20.2, gitleaks 8.30.1, gh 2.103.3, pre-commit 4.6.0
 - kubectl-argo-rollouts comes from argoproj/tap, tap not trusted yet
 - git user prashant-zo, noreply email, push over ssh
@@ -41,6 +42,8 @@ part 2: resize colima and create the kind cluster
 - both accept response_format json_object
 - latency 3 to 4.5s per call on a small bundle, both providers
 - cluster name: veto, context kind-veto
+- kind node kindest/node:v1.35.0, containerd 2.2.0, one control-plane node
+- idle vm memory: 0.8 GiB used of 4.9 GiB
 - demo shop repo: prashant-zo/veto-demo-shop, not created yet
 - image tag format: pr-<number>-<shortsha>
 
