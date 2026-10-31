@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 2: install loki
+part 2: install otel collector
 
 ## plan
 1. repo, setup, smoke test
@@ -24,6 +24,7 @@ part 2: install loki
 - asked friends for blind test prs
 - kind cluster veto up, k8s 1.35.0
 - argo rollouts and prometheus installed
+- loki installed, otlp push and query tested
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -46,6 +47,8 @@ part 2: install loki
 - kind node kindest/node:v1.35.0, containerd 2.2.0, one control-plane node
 - argo rollouts chart 2.43.8, app v1.10.1, namespace argo-rollouts
 - prometheus chart 29.40.3, server only, namespace monitoring, svc prometheus-server port 80
+- loki chart 20.2.1 from grafana-community repo, monolithic, filesystem 2Gi, auth off, svc loki port 3100
+- loki otlp push: http://loki.monitoring.svc:3100/otlp, service.name becomes label service_name
 - idle vm memory: 0.8 GiB used of 4.9 GiB
 - demo shop repo: prashant-zo/veto-demo-shop, not created yet
 - image tag format: pr-<number>-<shortsha>

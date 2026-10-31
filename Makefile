@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -39,4 +39,10 @@ prometheus: ## install prometheus (server only)
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update
 	helm upgrade --install prometheus prometheus-community/prometheus -n monitoring --create-namespace --version $(PROM_CHART) -f demo/stack/prometheus.yaml --wait
 
-stack: rollouts prometheus ## install the whole stack
+stack: rollouts prometheus loki ## install the whole stack
+
+LOKI_CHART := 20.2.1
+
+loki: ## install loki (single binary)
+	helm repo add grafana-community https://grafana-community.github.io/helm-charts --force-update
+	helm upgrade --install loki grafana-community/loki -n monitoring --create-namespace --version $(LOKI_CHART) -f demo/stack/loki.yaml --wait --timeout 5m
