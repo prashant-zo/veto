@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down
+.PHONY: help state sync scan hooks smoke up down stack
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -26,3 +26,9 @@ up: ## start colima and the kind cluster
 
 down: ## delete the kind cluster
 	kind delete cluster --name veto
+
+ROLLOUTS_CHART := 2.43.8
+
+stack: ## install argo rollouts and the observability stack
+	helm repo add argo https://argoproj.github.io/argo-helm --force-update
+	helm upgrade --install argo-rollouts argo/argo-rollouts -n argo-rollouts --create-namespace --version $(ROLLOUTS_CHART) -f demo/stack/argo-rollouts.yaml --wait
