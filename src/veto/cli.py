@@ -8,7 +8,8 @@ from .collect.github import GitHub, GitHubError
 from .collect.kube import Kube, KubeError, tag_of
 from .collect.loki import Loki, LokiError
 from .collect.prometheus import Prometheus, PromError
-from .collect.query import BadInput, check_hash, check_name, quote, selector
+from .collect.query import BadInput, check_hash, check_name, check_window, quote, selector
+from .compact.metrics import collect_side, compare, window_seconds
 
 
 def probe(args) -> int:
@@ -63,13 +64,48 @@ def probe(args) -> int:
     return 0
 
 
+def evidence(args) -> int:
+    s = config.load()
+    ns, svc, window = check_name(args.namespace), check_name(args.service), check_window(args.window)
+    hashes = Kube(s.kube_context).rollout_hashes(ns, svc)
+    if not hashes.canary:
+        print("no canary running")
+        return 1
+    prom = Prometheus(s.prom_url, s.http_timeout)
+    try:
+        stable = collect_side(prom, svc, check_hash(hashes.stable), window)
+        canary = collect_side(prom, svc, check_hash(hashes.canary), window)
+    except PromError as e:
+        print(f"prometheus error: {e}")
+        return 3
+    found, enough = compare(svc, stable, canary, window_seconds(window))
+    for name, st in (("stable", stable), ("canary", canary)):
+        edges = ", ".join(f"{d} {e.rps:.2f}/s" for d, e in sorted(st.edges.items())) or "none"
+        p99 = f"{st.p99_ms:.0f}ms" if st.p99_ms is not None else "n/a"
+        print(f"{name}: hash {st.hash}, {st.rps:.2f} req/s, errors {st.err_ratio:.1%}, p99 {p99}, calls: {edges}")
+    print(f"enough traffic: {enough}")
+    if not found:
+        print("no metric or edge anomalies")
+    for e in found:
+        print(f"  [{'hard' if e.hard else 'soft'}] {e.kind}: {e.summary}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="veto")
     sub = p.add_subparsers(dest="cmd", required=True)
+
     pr = sub.add_parser("probe", help="check that every source answers for a rollout")
     pr.add_argument("--namespace", default="shop")
     pr.add_argument("--service", required=True)
     pr.set_defaults(func=probe)
+
+    ev = sub.add_parser("evidence", help="metric and edge evidence, canary vs stable")
+    ev.add_argument("--namespace", default="shop")
+    ev.add_argument("--service", required=True)
+    ev.add_argument("--window", default="2m")
+    ev.set_defaults(func=evidence)
+
     args = p.parse_args(argv)
     try:
         return args.func(args)

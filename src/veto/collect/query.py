@@ -32,3 +32,12 @@ def selector(**labels: str) -> str:
     """{a="x",b="y"} from keyword args. Keys come from our code, values get quoted."""
     inner = ",".join(f"{k}={quote(v)}" for k, v in labels.items())
     return "{" + inner + "}"
+
+
+_WINDOW = re.compile(r"^[1-9][0-9]{0,2}[smh]$")
+
+
+def check_window(value: str) -> str:
+    if not _WINDOW.match(value or ""):
+        raise BadInput(f"bad window: {value!r}")
+    return value

@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -74,3 +74,8 @@ pf: ## port-forward prometheus and loki to localhost
 
 probe: ## ask every source about a rollout: make probe SVC=checkout
 	uv run --env-file .env veto probe --service $(SVC)
+
+WINDOW ?= 2m
+
+evidence: ## metric and edge evidence: make evidence SVC=checkout [WINDOW=2m]
+	uv run --env-file .env veto evidence --service $(SVC) --window $(WINDOW)

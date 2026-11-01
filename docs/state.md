@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 3: compactor (metric deltas and call edges)
+part 3: compactor (log templates and redaction)
 
 ## plan
 1. repo, setup, smoke test
@@ -30,6 +30,7 @@ part 3: compactor (metric deltas and call edges)
 - canary split confirmed in edges, span metrics and logs, abort tested
 - 5 scenario prs created with images in kind
 - collectors for prometheus, loki, github and kube, unit tested, live probe works
+- metric and edge compactor, unit tested, live checked on pr 2, 4 and the control
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -78,6 +79,10 @@ part 3: compactor (metric deltas and call edges)
 - local port forwards: prometheus localhost:19090, loki localhost:13100 (scripts/pf.sh start|stop)
 - intent comes from the image tag read from the pod spec, never from telemetry, tag sha must equal pr head sha
 - label values are validated and quoted before going into promql or logql
+- latency metric: traces_span_metrics_duration_milliseconds_bucket (ms), servicegraph latency in seconds
+- edges come from client span metrics by server_address, counted per incoming request
+- httpx logs every outgoing call at INFO: HTTP Request: POST http://payments:8080/charge
+- compactor thresholds live in src/veto/compact/metrics.py (Thresholds)
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
