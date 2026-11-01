@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -79,3 +79,6 @@ WINDOW ?= 2m
 
 evidence: ## canary evidence from metrics, edges and logs: make evidence SVC=checkout [WINDOW=2m]
 	uv run --env-file .env veto evidence --service $(SVC) --window $(WINDOW)
+
+bundle: ## save the bundle the judge sees: make bundle SVC=checkout [CASE=pr-3 saves to eval/cases]
+	uv run --env-file .env veto bundle --service $(SVC) --window $(WINDOW) --out $(if $(CASE),eval/cases/$(CASE).json,.local/bundle.json)

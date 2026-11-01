@@ -1,0 +1,54 @@
+{
+  "schema": "veto.bundle/v1",
+  "created_at": "2026-11-01T22:47:06Z",
+  "rollout": {
+    "namespace": "shop",
+    "service": "checkout",
+    "window": "2m",
+    "canary_tag": "pr-0-a13119d"
+  },
+  "stable": {
+    "hash": "5474fbcd59",
+    "image": "veto-shop:main-a13119d",
+    "requests": 280,
+    "error_ratio": 0.0,
+    "p99_ms": 49.6329,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "canary": {
+    "hash": "cb94475d9",
+    "image": "veto-shop:pr-0-a13119d",
+    "requests": 306,
+    "error_ratio": 0.0,
+    "p99_ms": 49.6047,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "traffic": {
+    "enough_to_promote": true,
+    "logs_partial": false
+  },
+  "intent": null,
+  "evidence": [
+    {
+      "id": "P1",
+      "kind": "intent_missing",
+      "hard": true,
+      "summary": "image tag 'pr-0-a13119d' does not point to a pull request, so there is no stated intent to check",
+      "stable": null,
+      "canary": null,
+      "detail": {
+        "tag": "pr-0-a13119d"
+      }
+    }
+  ],
+  "redacted": {
+    "ip": 4
+  },
+  "hash": "sha256:98a6a9b67eb26b7edd405c11d63df7e864d63a9988b61082f8d4b46edb1e088a"
+}

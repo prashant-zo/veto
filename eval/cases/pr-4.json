@@ -1,0 +1,131 @@
+{
+  "schema": "veto.bundle/v1",
+  "created_at": "2026-11-01T22:57:21Z",
+  "rollout": {
+    "namespace": "shop",
+    "service": "checkout",
+    "window": "2m",
+    "canary_tag": "pr-4-302d645"
+  },
+  "stable": {
+    "hash": "5474fbcd59",
+    "image": "veto-shop:main-a13119d",
+    "requests": 274,
+    "error_ratio": 0.0,
+    "p99_ms": 49.5254,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "canary": {
+    "hash": "5795fb5d4c",
+    "image": "veto-shop:pr-4-302d645",
+    "requests": 312,
+    "error_ratio": 1.0,
+    "p99_ms": 4970.0,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0073
+    }
+  },
+  "traffic": {
+    "enough_to_promote": true,
+    "logs_partial": false
+  },
+  "intent": {
+    "pr": 4,
+    "title": "read payments port from config",
+    "body": "Payments chart moved to port 9090, so checkout now uses that as the default. It can still be changed with PAYMENTS_URL.\n",
+    "commits": [
+      "read payments port from config"
+    ],
+    "head_sha": "302d645ed57dc6351a40003a79b787975620f43d",
+    "sha_matches": true,
+    "files": [
+      {
+        "path": "shop/checkout.py",
+        "status": "modified",
+        "patch": "@@ -10,7 +10,7 @@\n log = logging.getLogger(\"checkout\")\n \n PRICING_URL = os.environ.get(\"PRICING_URL\", \"http://pricing:8080\")\n-PAYMENTS_URL = os.environ.get(\"PAYMENTS_URL\", \"http://payments:8080\")\n+PAYMENTS_URL = os.environ.get(\"PAYMENTS_URL\", \"http://payments:9090\")\n \n app = FastAPI()\n client = httpx.Client(timeout=2.0)"
+      }
+    ],
+    "files_not_shown": 0
+  },
+  "evidence": [
+    {
+      "id": "M1",
+      "kind": "error_rate_up",
+      "hard": true,
+      "summary": "checkout error ratio 0.0% on stable, 100.0% on canary",
+      "stable": 0.0,
+      "canary": 1.0,
+      "detail": {}
+    },
+    {
+      "id": "M2",
+      "kind": "latency_up",
+      "hard": true,
+      "summary": "checkout p99 50ms on stable, 4970ms on canary",
+      "stable": 49.5254,
+      "canary": 4970.0,
+      "detail": {}
+    },
+    {
+      "id": "M3",
+      "kind": "edge_errors",
+      "hard": true,
+      "summary": "checkout calls to payments fail 0.0% on stable, 100.0% on canary",
+      "stable": 0.0,
+      "canary": 1.0,
+      "detail": {
+        "destination": "payments"
+      }
+    },
+    {
+      "id": "L1",
+      "kind": "log_missing",
+      "hard": false,
+      "summary": "INFO log 1.04 times per request on stable, 0.00 on canary: \"checkout order confirmed id=<*> item=<*> total=<*>\"",
+      "stable": 1.0354,
+      "canary": 0.0,
+      "detail": {
+        "level": "INFO",
+        "template": "checkout order confirmed id=<*> item=<*> total=<*>",
+        "stable_count": 284,
+        "canary_count": 0
+      }
+    },
+    {
+      "id": "L2",
+      "kind": "log_missing",
+      "hard": false,
+      "summary": "INFO log 1.04 times per request on stable, 0.00 on canary: \"httpx HTTP Request: POST http://payments:8080/charge \"HTTP/<NUM> <NUM> OK\"\"",
+      "stable": 1.0354,
+      "canary": 0.0,
+      "detail": {
+        "level": "INFO",
+        "template": "httpx HTTP Request: POST http://payments:8080/charge \"HTTP/<NUM> <NUM> OK\"",
+        "stable_count": 284,
+        "canary_count": 0
+      }
+    },
+    {
+      "id": "L3",
+      "kind": "log_new_error",
+      "hard": true,
+      "summary": "new ERROR log on canary, 341 times, never on stable: \"Exception in ASGI application | httpx.ConnectTimeout: timed out\"",
+      "stable": 0,
+      "canary": 341,
+      "detail": {
+        "level": "ERROR",
+        "template": "Exception in ASGI application | httpx.ConnectTimeout: timed out",
+        "stable_count": 0,
+        "canary_count": 341
+      }
+    }
+  ],
+  "redacted": {
+    "ip": 4
+  },
+  "hash": "sha256:de4287d1fdab1d182a057f4231f5c46fe9a8fb252aafc634988ceb89352d0676"
+}

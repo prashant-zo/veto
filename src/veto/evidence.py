@@ -17,6 +17,8 @@ class Gathered:
     namespace: str
     service: str
     window: str
+    stable_image: str
+    canary_image: str
     stable: SideStats
     canary: SideStats
     logs: LogStats
@@ -44,4 +46,5 @@ def gather(s: Settings, namespace: str, service: str, window: str) -> Gathered |
                         (canary_hash, kube.started_at(ns, canary_hash)))
     found += compare_logs(svc, logs, stable.rps * ws, canary.rps * ws)
     enough = enough and not logs.truncated   # we did not see every log line, so we cannot promote
-    return Gathered(ns, svc, window, stable, canary, logs, found, enough)
+    images = kube.image_for_hash(ns, stable_hash, svc), kube.image_for_hash(ns, canary_hash, svc)
+    return Gathered(ns, svc, window, *images, stable, canary, logs, found, enough)

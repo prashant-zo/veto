@@ -9,7 +9,9 @@ TAG_RE = re.compile(r"^pr-(\d+)-([0-9a-f]{7,40})$")
 
 
 class GitHubError(RuntimeError):
-    pass
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
 
 
 @dataclass(frozen=True)
@@ -51,17 +53,24 @@ class GitHub:
             r = self._http.get(path, params=params)
             r.raise_for_status()
             return r.json()
+        except httpx.HTTPStatusError as e:
+            raise GitHubError(f"{path}: http {e.response.status_code}", e.response.status_code) from e
         except (httpx.HTTPError, ValueError) as e:
             raise GitHubError(f"{path}: {e}") from e
 
     def intent_for_tag(self, tag: str) -> Intent | None:
-        """None when the tag carries no PR number. The sha in the tag must be the PR head."""
+        """None when the tag carries no PR number or the PR does not exist. The sha in the tag must be the PR head."""
         parsed = parse_tag(tag)
         if parsed is None:
             return None
         number, sha = parsed
         base = f"/repos/{self.repo}/pulls/{number}"
-        pr = self._get(base)
+        try:
+            pr = self._get(base)
+        except GitHubError as e:
+            if e.status == 404:
+                return None
+            raise
         commits = self._get(f"{base}/commits", {"per_page": 100})
         files = self._get(f"{base}/files", {"per_page": 100})
         head_sha = pr["head"]["sha"]

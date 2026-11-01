@@ -1,0 +1,84 @@
+{
+  "schema": "veto.bundle/v1",
+  "created_at": "2026-11-01T22:49:40Z",
+  "rollout": {
+    "namespace": "shop",
+    "service": "checkout",
+    "window": "2m",
+    "canary_tag": "pr-1-89fe87d"
+  },
+  "stable": {
+    "hash": "5474fbcd59",
+    "image": "veto-shop:main-a13119d",
+    "requests": 268,
+    "error_ratio": 0.0,
+    "p99_ms": 49.6608,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "canary": {
+    "hash": "69dd6866b7",
+    "image": "veto-shop:pr-1-89fe87d",
+    "requests": 355,
+    "error_ratio": 0.0,
+    "p99_ms": 49.1062,
+    "calls_per_request": {
+      "payments": 1.0001
+    }
+  },
+  "traffic": {
+    "enough_to_promote": true,
+    "logs_partial": false
+  },
+  "intent": {
+    "pr": 1,
+    "title": "cache prices in checkout",
+    "body": "Prices almost never change, so checkout now keeps its own price list and does not call the pricing service on every order anymore.\n\n- removes one network call per order\n- pricing service stays up for other users, checkout just does not depend on it\n\nExpected after deploy: no more calls from checkout to pricing.\n",
+    "commits": [
+      "cache prices in checkout"
+    ],
+    "head_sha": "89fe87dd110dd2d017fab58a65efa403898f01a7",
+    "sha_matches": true,
+    "files": [
+      {
+        "path": "shop/checkout.py",
+        "status": "modified",
+        "patch": "@@ -9,9 +9,11 @@\n logging.basicConfig(level=logging.INFO, format=\"%(levelname)s %(name)s %(message)s\")\n log = logging.getLogger(\"checkout\")\n \n-PRICING_URL = os.environ.get(\"PRICING_URL\", \"http://pricing:8080\")\n PAYMENTS_URL = os.environ.get(\"PAYMENTS_URL\", \"http://payments:8080\")\n \n+# prices barely change, so checkout keeps its own copy and skips the pricing call\n+PRICES = {\"tea\": 4.50, \"coffee\": 6.00, \"cake\": 8.25, \"cookie\": 2.75}\n+\n app = FastAPI()\n client = httpx.Client(timeout=2.0)\n \n@@ -28,11 +30,10 @@ def healthz():\n \n @app.post(\"/checkout\")\n def checkout(order: Order):\n-    r = client.get(f\"{PRICING_URL}/price\", params={\"item\": order.item})\n-    if r.status_code != 200:\n-        log.warning(\"price lookup failed item=%s status=%s\", order.item, r.status_code)\n-        raise HTTPException(status_code=502, detail=\"pricing unavailable\")\n-    total = round(r.json()[\"price\"] * order.qty, 2)\n+    if order.item not in PRICES:\n+        log.warning(\"unknown item=%s\", order.item)\n+        raise HTTPException(status_code=404, detail=\"unknown item\")\n+    total = round(PRICES[order.item] * order.qty, 2)\n \n     p = client.post(f\"{PAYMENTS_URL}/charge\", json={\"amount\": total})\n     if p.status_code != 200:"
+      }
+    ],
+    "files_not_shown": 0
+  },
+  "evidence": [
+    {
+      "id": "M1",
+      "kind": "edge_missing",
+      "hard": true,
+      "summary": "checkout calls pricing 1.00 times per request on stable, 0.00 on canary",
+      "stable": 1.0,
+      "canary": 0.0,
+      "detail": {
+        "destination": "pricing"
+      }
+    },
+    {
+      "id": "L1",
+      "kind": "log_missing",
+      "hard": false,
+      "summary": "INFO log 0.97 times per request on stable, 0.00 on canary: \"httpx HTTP Request: GET http://pricing:8080/price?item=<*> \"HTTP/<NUM> <NUM> OK\"\"",
+      "stable": 0.9676,
+      "canary": 0.0,
+      "detail": {
+        "level": "INFO",
+        "template": "httpx HTTP Request: GET http://pricing:8080/price?item=<*> \"HTTP/<NUM> <NUM> OK\"",
+        "stable_count": 259,
+        "canary_count": 0
+      }
+    }
+  ],
+  "redacted": {
+    "ip": 4
+  },
+  "hash": "sha256:8e2ee9ac30b83ecd9a341bcb3f994ec7129c84b358440289c8d73ffc156fdadb"
+}

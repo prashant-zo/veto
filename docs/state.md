@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 3: bundle (evidence ids and hash)
+part 4: judge and policy
 
 ## plan
 1. repo, setup, smoke test
@@ -34,6 +34,7 @@ part 3: bundle (evidence ids and hash)
 - low traffic rule, open loop load generator
 - log compactor with redaction and injection signs, live checked on the control, pr 3, 4 and 5
 - traceback bodies skipped in loki, partial logs block a promote
+- evidence bundle with ids and hash, captured for pr 1 to 5 and the control in eval/cases
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -90,6 +91,10 @@ part 3: bundle (evidence ids and hash)
 - log evidence: log_new_error, log_error_up, log_injection are hard, log_new and log_missing are soft
 - logs are cleaned and redacted before templating, startup logs are the first 90s of each side, see adr 0008
 - log queries drop indented lines (traceback bodies) and end 10s before now so half shipped lines are not read
+- bundle: make bundle SVC=checkout CASE=pr-3, schema veto.bundle/v1, ids M metrics, L logs, P pull request, see adr 0009
+- no pr, a tag sha that is not the pr head, github down, or pr text aimed at the reviewer are hard evidence
+- github api without a token allows 60 calls an hour, one bundle uses 3
+- blind pr bundles are captured only at eval time, after the feature freeze
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout

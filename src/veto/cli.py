@@ -1,9 +1,12 @@
 """Command line entry point."""
 
 import argparse
+import json
 import sys
+from pathlib import Path
 
 from . import config
+from .bundle import collect as collect_bundle
 from .collect.github import GitHub, GitHubError
 from .collect.kube import Kube, KubeError, tag_of
 from .collect.loki import Loki, LokiError
@@ -98,6 +101,32 @@ def evidence(args) -> int:
     return 0
 
 
+def bundle_cmd(args) -> int:
+    try:
+        b = collect_bundle(args.namespace, args.service, args.window)
+    except PromError as e:
+        print(f"prometheus error: {e}")
+        return 3
+    except LokiError as e:
+        print(f"loki error: {e}")
+        return 3
+    if b is None:
+        print("no canary running")
+        return 1
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(b, indent=2, ensure_ascii=True) + "\n")
+    print(f"saved {out}, {b['hash'][:19]}, {len(b['evidence'])} evidence items")
+    intent = b["intent"]
+    if intent:
+        print(f"intent: pr #{intent['pr']} {intent['title']!r}, sha is head: {intent['sha_matches']}, "
+              f"files: {len(intent['files'])}")
+    print(f"enough traffic to promote: {b['traffic']['enough_to_promote']}, redacted: {b['redacted'] or 'nothing'}")
+    for e in b["evidence"]:
+        print(f"  {e['id']} [{'hard' if e['hard'] else 'soft'}] {e['kind']}: {e['summary']}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="veto")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -112,6 +141,13 @@ def main(argv: list[str] | None = None) -> int:
     ev.add_argument("--service", required=True)
     ev.add_argument("--window", default="2m")
     ev.set_defaults(func=evidence)
+
+    bu = sub.add_parser("bundle", help="save the evidence bundle the judge will see")
+    bu.add_argument("--namespace", default="shop")
+    bu.add_argument("--service", required=True)
+    bu.add_argument("--window", default="2m")
+    bu.add_argument("--out", default=".local/bundle.json")
+    bu.set_defaults(func=bundle_cmd)
 
     args = p.parse_args(argv)
     try:

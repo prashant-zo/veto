@@ -44,6 +44,11 @@ def test_tag_without_pr_has_no_intent():
     assert gh().intent_for_tag("main-a13119d") is None
 
 
-def test_missing_pr_raises():
+def test_missing_pr_is_no_intent():
+    assert gh().intent_for_tag("pr-9-ac3b97a") is None
+
+
+def test_github_down_raises():
+    down = GitHub("o/r", transport=httpx.MockTransport(lambda r: httpx.Response(503)))
     with pytest.raises(GitHubError):
-        gh().intent_for_tag("pr-9-ac3b97a")
+        down.intent_for_tag("pr-2-ac3b97a")

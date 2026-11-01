@@ -36,12 +36,13 @@ _RULES = [
 ]
 
 
-def clean(text: str) -> str:
+def clean(text: str, limit: int | None = MAX_LEN) -> str:
+    """limit is for log lines, PR text is cut later with a visible marker."""
     text = unicodedata.normalize("NFKC", text)
     text = _ANSI.sub("", text)
     text = _INVISIBLE.sub("", text)
     text = _CONTROL.sub(" ", text)
-    return text[:MAX_LEN]
+    return text[:limit] if limit else text
 
 
 def redact(text: str) -> tuple[str, Counter]:

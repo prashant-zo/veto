@@ -1,0 +1,88 @@
+{
+  "schema": "veto.bundle/v1",
+  "created_at": "2026-11-01T22:54:47Z",
+  "rollout": {
+    "namespace": "shop",
+    "service": "checkout",
+    "window": "2m",
+    "canary_tag": "pr-3-4a152ce"
+  },
+  "stable": {
+    "hash": "5474fbcd59",
+    "image": "veto-shop:main-a13119d",
+    "requests": 305,
+    "error_ratio": 0.0,
+    "p99_ms": 49.4164,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "canary": {
+    "hash": "6585679f7c",
+    "image": "veto-shop:pr-3-4a152ce",
+    "requests": 285,
+    "error_ratio": 0.0,
+    "p99_ms": 49.6452,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "traffic": {
+    "enough_to_promote": true,
+    "logs_partial": false
+  },
+  "intent": {
+    "pr": 3,
+    "title": "clearer order log line",
+    "body": "Changed the order log line from \"order confirmed\" to \"order placed\" and added qty. Support asked for qty in the logs so they can match tickets faster.\n\nOnly the log text changes.\n",
+    "commits": [
+      "clearer order log line"
+    ],
+    "head_sha": "4a152ce8da1b7aabe75c5deca64765fced367645",
+    "sha_matches": true,
+    "files": [
+      {
+        "path": "shop/checkout.py",
+        "status": "modified",
+        "patch": "@@ -40,5 +40,5 @@ def checkout(order: Order):\n         raise HTTPException(status_code=502, detail=\"payment failed\")\n \n     order_id = uuid.uuid4().hex[:8]\n-    log.info(\"order confirmed id=%s item=%s total=%s\", order_id, order.item, total)\n+    log.info(\"order placed id=%s item=%s qty=%s total=%s\", order_id, order.item, order.qty, total)\n     return {\"order_id\": order_id, \"status\": \"confirmed\", \"total\": total}"
+      }
+    ],
+    "files_not_shown": 0
+  },
+  "evidence": [
+    {
+      "id": "L1",
+      "kind": "log_missing",
+      "hard": false,
+      "summary": "INFO log 0.99 times per request on stable, 0.00 on canary: \"checkout order confirmed id=<*> item=<*> total=<*>\"",
+      "stable": 0.9897,
+      "canary": 0.0,
+      "detail": {
+        "level": "INFO",
+        "template": "checkout order confirmed id=<*> item=<*> total=<*>",
+        "stable_count": 302,
+        "canary_count": 0
+      }
+    },
+    {
+      "id": "L2",
+      "kind": "log_new",
+      "hard": false,
+      "summary": "new INFO log on canary, 326 times, never on stable: \"checkout order placed id=<*> item=<*> qty=<*> total=<*>\"",
+      "stable": 0,
+      "canary": 326,
+      "detail": {
+        "level": "INFO",
+        "template": "checkout order placed id=<*> item=<*> qty=<*> total=<*>",
+        "stable_count": 0,
+        "canary_count": 326
+      }
+    }
+  ],
+  "redacted": {
+    "ip": 4
+  },
+  "hash": "sha256:dad80e0f68bb7524ed9b106eb7b3b2500c7b2ed70d05226bbc2be3afcaa60fb4"
+}
