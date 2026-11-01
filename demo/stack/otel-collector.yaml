@@ -23,13 +23,13 @@ presets:
     extractAllPodLabels: true
 config:
   receivers:
-    filelog:
+    file_log:
       include:
         - /var/log/pods/shop_*/*/*.log
   connectors:
     servicegraph:
       dimensions:
-        - k8s.pod.labels.rollouts-pod-template-hash
+        - rollouts-pod-template-hash
       metrics_flush_interval: 15s
     spanmetrics:
       dimensions:
@@ -40,19 +40,19 @@ config:
       endpoint: ${env:MY_POD_IP}:8889
       resource_to_telemetry_conversion:
         enabled: true
-    otlphttp/loki:
+    otlp_http/loki:
       endpoint: http://loki.monitoring.svc:3100/otlp
   service:
     pipelines:
       traces:
         receivers: [otlp]
-        processors: [memory_limiter, k8sattributes, batch]
+        processors: [memory_limiter, k8s_attributes, batch]
         exporters: [servicegraph, spanmetrics]
       metrics:
         receivers: [servicegraph, spanmetrics]
         processors: [memory_limiter, batch]
         exporters: [prometheus]
       logs:
-        receivers: [filelog]
-        processors: [memory_limiter, k8sattributes, batch]
-        exporters: [otlphttp/loki]
+        receivers: [file_log]
+        processors: [memory_limiter, k8s_attributes, batch]
+        exporters: [otlp_http/loki]

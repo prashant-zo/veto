@@ -25,6 +25,7 @@ part 2: create the shop repo and services
 - kind cluster veto up, k8s 1.35.0
 - argo rollouts and prometheus installed
 - loki installed, otlp push and query tested
+- otel collector installed, traces to prometheus and logs to loki tested
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -49,6 +50,13 @@ part 2: create the shop repo and services
 - prometheus chart 29.40.3, server only, namespace monitoring, svc prometheus-server port 80
 - loki chart 20.2.1 from grafana-community repo, monolithic, filesystem 2Gi, auth off, svc loki port 3100
 - loki otlp push: http://loki.monitoring.svc:3100/otlp, service.name becomes label service_name
+- otel collector chart 0.178.1, contrib v0.163.2, daemonset otel-collector-agent, svc otel-collector (otlp grpc 4317, http 4318), metrics on pod port 8889 scraped by prometheus
+- otel component names: file_log, k8s_attributes, otlp_http (old names deprecated)
+- pod labels become attributes named exactly like the label (run, rollouts-pod-template-hash), prometheus label rollouts_pod_template_hash
+- edge metric: traces_service_graph_request_total{client, server, failed}, hash dims expected as client_rollouts_pod_template_hash and server_rollouts_pod_template_hash (confirm with real rollout)
+- request metric: traces_span_metrics_calls_total{service_name, span_kind, span_name, status_code, server_address}
+- loki log fields: service_name, service_namespace, k8s_pod_name, k8s_namespace_name, pod labels by their own key
+- prometheus kubernetes-pods job honors labels, so job and instance on span metrics come from the app
 - idle vm memory: 0.8 GiB used of 4.9 GiB
 - demo shop repo: prashant-zo/veto-demo-shop, not created yet
 - image tag format: pr-<number>-<shortsha>
