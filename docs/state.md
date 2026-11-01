@@ -29,6 +29,7 @@ part 3: collectors (prometheus, loki, github)
 - shop repo and image built, shop deployed with load
 - canary split confirmed in edges, span metrics and logs, abort tested
 - 5 scenario prs created with images in kind
+- 5 scenario prs created with images in kind
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -78,6 +79,12 @@ part 3: collectors (prometheus, loki, github)
 - promote: make promote SVC=checkout
 - test image veto-shop:pr-0-a13119d is the same code as main, only for canary tests
 - runbook: docs/runbook.md
+- scenario prs in veto-demo-shop, all open from main, never merge, see adr 0007:
+  #1 cache-prices veto-shop:pr-1-89fe87d expect HOLD
+  #2 refactor-helpers veto-shop:pr-2-ac3b97a expect ABORT
+  #3 clearer-log veto-shop:pr-3-4a152ce expect PROMOTE
+  #4 payments-port veto-shop:pr-4-302d645 expect ABORT by floor
+  #5 tidy-logging veto-shop:pr-5-f771cc1 expect ABORT (attack in pr text and a startup log line)
 - scenario prs in veto-demo-shop, all open from main, see adr 0007:
   #1 cache-prices veto-shop:pr-1-89fe87d expect HOLD
   #2 refactor-helpers veto-shop:pr-2-ac3b97a expect ABORT
