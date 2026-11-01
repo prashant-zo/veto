@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: pricing
+  namespace: shop
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: pricing
+  template:
+    metadata:
+      labels:
+        app: pricing
+    spec:
+      containers:
+        - name: pricing
+          image: veto-shop:main-a13119d
+          command: ["opentelemetry-instrument", "uvicorn", "shop./Users/prashant/Documents/The Helios Project/DevOps/Project/veto/pricingpp", "--host", "0.0.0.0", "--port", "8080", "--no-access-log"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: pricing
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.monitoring.svc:4318
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: http/protobuf
+            - name: OTEL_TRACES_EXPORTER
+              value: otlp
+            - name: OTEL_METRICS_EXPORTER
+              value: none
+            - name: OTEL_LOGS_EXPORTER
+              value: none
+            - name: OTEL_PYTHON_FASTAPI_EXCLUDED_URLS
+              value: healthz
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 192Mi
+  strategy:
+    canary:
+      steps:
+        - setWeight: 50
+        - pause: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pricing
+  namespace: shop
+spec:
+  selector:
+    app: pricing
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

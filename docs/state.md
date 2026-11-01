@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 2: create the shop repo and services
+part 2: canary split check
 
 ## plan
 1. repo, setup, smoke test
@@ -26,6 +26,7 @@ part 2: create the shop repo and services
 - argo rollouts and prometheus installed
 - loki installed, otlp push and query tested
 - otel collector installed, traces to prometheus and logs to loki tested
+- shop repo and image built, shop deployed with load
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -58,8 +59,14 @@ part 2: create the shop repo and services
 - loki log fields: service_name, service_namespace, k8s_pod_name, k8s_namespace_name, pod labels by their own key
 - prometheus kubernetes-pods job honors labels, so job and instance on span metrics come from the app
 - idle vm memory: 0.8 GiB used of 4.9 GiB
-- demo shop repo: prashant-zo/veto-demo-shop, not created yet
+- demo shop repo: prashant-zo/veto-demo-shop at .../DevOps/Project/veto-demo-shop, one image veto-shop:<tag>, built with make build [PR=n], loaded into kind
 - image tag format: pr-<number>-<shortsha>
+- base image: veto-shop:main-a13119d
+- shop libs: fastapi 0.162.0, starlette 1.10.0, uvicorn 0.54.0, httpx 0.28.1, otel sdk 1.45.2, instrumentation 0.66b2
+- shop: rollouts checkout, pricing, payments in ns shop, 2 replicas, canary setWeight 50 then pause, svc port 8080
+- loadgen: ns load, busybox wget about 5 rps to checkout
+- query helpers: scripts/prom.sh and scripts/loki.sh
+- start a canary: make release SVC=checkout TAG=pr-1-abc1234
 
 ## rules
 - commit and push after every step, short lowercase message

@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -52,3 +52,10 @@ OTEL_CHART := 0.178.1
 otel: ## install the otel collector
 	helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts --force-update
 	helm upgrade --install otel-collector open-telemetry/opentelemetry-collector -n monitoring --create-namespace --version $(OTEL_CHART) -f demo/stack/otel-collector.yaml --wait --timeout 5m
+
+shop: ## deploy the shop and the load generator
+	kubectl --context kind-veto apply -f demo/shop/
+	kubectl --context kind-veto apply -f demo/load/
+
+release: ## start a canary: make release SVC=checkout TAG=pr-1-abc1234
+	kubectl argo rollouts --context kind-veto -n shop set image $(SVC) $(SVC)=veto-shop:$(TAG)
