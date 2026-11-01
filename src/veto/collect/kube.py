@@ -55,3 +55,17 @@ class Kube:
                 if container is None or c.name == container:
                     return c.image
         raise KubeError(f"no running pod for hash {pod_hash}")
+
+    def started_at(self, namespace: str, pod_hash: str) -> float | None:
+        """Unix time the running containers of the oldest pod for this hash started."""
+        try:
+            pods = self._core.list_namespaced_pod(namespace, label_selector=f"rollouts-pod-template-hash={pod_hash}")
+        except ApiException as e:
+            raise KubeError(f"pods for {pod_hash}: {e.reason}") from e
+        starts = []
+        for pod in pods.items:
+            for cs in pod.status.container_statuses or []:
+                running = cs.state.running if cs.state else None
+                if running and running.started_at:
+                    starts.append(running.started_at.timestamp())
+        return min(starts) if starts else None

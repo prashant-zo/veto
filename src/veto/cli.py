@@ -7,9 +7,10 @@ from . import config
 from .collect.github import GitHub, GitHubError
 from .collect.kube import Kube, KubeError, tag_of
 from .collect.loki import Loki, LokiError
-from .collect.prometheus import Prometheus, PromError
-from .collect.query import BadInput, check_hash, check_name, check_window, quote, selector
-from .compact.metrics import collect_side, compare, window_seconds
+from .collect.prometheus import PromError, Prometheus
+from .collect.query import BadInput, check_hash, check_name, quote, selector
+from .compact.metrics import window_seconds
+from .evidence import gather
 
 
 def probe(args) -> int:
@@ -65,28 +66,34 @@ def probe(args) -> int:
 
 
 def evidence(args) -> int:
-    s = config.load()
-    ns, svc, window = check_name(args.namespace), check_name(args.service), check_window(args.window)
-    hashes = Kube(s.kube_context).rollout_hashes(ns, svc)
-    if not hashes.canary:
-        print("no canary running")
-        return 1
-    prom = Prometheus(s.prom_url, s.http_timeout)
     try:
-        stable = collect_side(prom, svc, check_hash(hashes.stable), window)
-        canary = collect_side(prom, svc, check_hash(hashes.canary), window)
+        g = gather(config.load(), args.namespace, args.service, args.window)
     except PromError as e:
         print(f"prometheus error: {e}")
         return 3
-    found, enough = compare(svc, stable, canary, window_seconds(window))
-    for name, st in (("stable", stable), ("canary", canary)):
+    except LokiError as e:
+        print(f"loki error: {e}")
+        return 3
+    if g is None:
+        print("no canary running")
+        return 1
+    ws = window_seconds(g.window)
+    for name, st in (("stable", g.stable), ("canary", g.canary)):
         edges = ", ".join(f"{d} {e.rps:.2f}/s" for d, e in sorted(st.edges.items())) or "none"
         p99 = f"{st.p99_ms:.0f}ms" if st.p99_ms is not None else "n/a"
-        print(f"{name}: hash {st.hash}, {st.rps:.2f} req/s, errors {st.err_ratio:.1%}, p99 {p99}, calls: {edges}")
-    print(f"enough traffic: {enough}")
-    if not found:
-        print("no metric or edge anomalies")
-    for e in found:
+        print(f"{name}: hash {st.hash}, {st.rps:.2f} req/s ({st.rps * ws:.0f} in {g.window}), "
+              f"errors {st.err_ratio:.1%}, p99 {p99}, calls: {edges}")
+    lg = g.logs
+    redacted = ", ".join(f"{k} {v}" for k, v in sorted(lg.redacted.items())) or "nothing"
+    print(f"logs: stable {lg.lines['stable']} lines + {lg.lines['stable_startup']} at startup, "
+          f"canary {lg.lines['canary']} + {lg.lines['canary_startup']}, "
+          f"{len(lg.canary_total)} canary templates, redacted: {redacted}")
+    if lg.truncated:
+        print("logs: hit the loki line limit, counts are partial")
+    print(f"enough traffic to promote: {g.enough}")
+    if not g.found:
+        print("no anomalies")
+    for e in g.found:
         print(f"  [{'hard' if e.hard else 'soft'}] {e.kind}: {e.summary}")
     return 0
 
@@ -100,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
     pr.add_argument("--service", required=True)
     pr.set_defaults(func=probe)
 
-    ev = sub.add_parser("evidence", help="metric and edge evidence, canary vs stable")
+    ev = sub.add_parser("evidence", help="canary vs stable evidence from metrics, edges and logs")
     ev.add_argument("--namespace", default="shop")
     ev.add_argument("--service", required=True)
     ev.add_argument("--window", default="2m")

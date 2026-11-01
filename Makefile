@@ -77,5 +77,5 @@ probe: ## ask every source about a rollout: make probe SVC=checkout
 
 WINDOW ?= 2m
 
-evidence: ## metric and edge evidence: make evidence SVC=checkout [WINDOW=2m]
+evidence: ## canary evidence from metrics, edges and logs: make evidence SVC=checkout [WINDOW=2m]
 	uv run --env-file .env veto evidence --service $(SVC) --window $(WINDOW)

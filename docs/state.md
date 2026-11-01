@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 3: compactor (log templates and redaction)
+part 3: bundle (evidence ids and hash)
 
 ## plan
 1. repo, setup, smoke test
@@ -32,6 +32,7 @@ part 3: compactor (log templates and redaction)
 - collectors for prometheus, loki, github and kube, unit tested, live probe works
 - metric and edge compactor, unit tested, live checked on pr 2, 4 and the control
 - low traffic rule, open loop load generator
+- log compactor with redaction and injection signs, live checked on the control, pr 3, 4 and 5
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -85,6 +86,8 @@ part 3: compactor (log templates and redaction)
 - httpx logs every outgoing call at INFO: HTTP Request: POST http://payments:8080/charge
 - compactor thresholds live in src/veto/compact/metrics.py (Thresholds)
 - low traffic blocks a promote, never an abort: under 20 requests a side no evidence, under 50 no promote
+- log evidence: log_new_error, log_error_up, log_injection are hard, log_new and log_missing are soft
+- logs are cleaned and redacted before templating, startup logs are the first 90s of each side, see adr 0008
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
