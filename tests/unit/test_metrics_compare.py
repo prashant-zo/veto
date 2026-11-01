@@ -52,3 +52,16 @@ def test_window_seconds():
     assert window_seconds("2m") == 120
     assert window_seconds("90s") == 90
     assert window_seconds("1h") == 3600
+
+
+def test_tiny_sample_reports_nothing():
+    found, enough = compare("checkout", side("a", rps=0.1), side("b", rps=0.1, err=1.0), 120)
+    assert found == [] and not enough
+
+
+def test_low_traffic_still_shows_hard_evidence():
+    # like pr 4 live: the hanging canary slowed the load to 36 and 49 requests
+    s = side("a", rps=0.3, payments=(0.3, 0.0))
+    c = side("b", rps=0.41, err=1.0, payments=(0.41, 0.41))
+    found, enough = compare("checkout", s, c, 120)
+    assert kinds(found) == ["edge_errors", "error_rate_up"] and not enough

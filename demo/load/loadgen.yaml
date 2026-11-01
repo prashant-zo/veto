@@ -22,12 +22,15 @@ spec:
         - name: loadgen
           image: busybox:1.37
           command: ["sh", "-c"]
+          # open loop: a new request every 0.2s even when checkout is slow,
+          # like real users, so a hanging canary still gets its share of traffic
           args:
             - |
               while true; do
                 for i in tea coffee cake cookie; do
-                  wget -q -O /dev/null --header "Content-Type: application/json" \
-                    --post-data "{\"item\":\"$i\",\"qty\":1}" http://checkout.shop.svc:8080/checkout || true
+                  ( wget -q -T 5 -O /dev/null --header "Content-Type: application/json" \
+                      --post-data "{\"item\":\"$i\",\"qty\":1}" http://checkout.shop.svc:8080/checkout \
+                      > /dev/null 2>&1 & )
                   sleep 0.2
                 done
               done
@@ -36,4 +39,4 @@ spec:
               cpu: 10m
               memory: 16Mi
             limits:
-              memory: 32Mi
+              memory: 64Mi

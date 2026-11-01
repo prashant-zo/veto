@@ -15,7 +15,8 @@ ERROR = "STATUS_CODE_ERROR"
 
 @dataclass(frozen=True)
 class Thresholds:
-    min_requests: int = 50            # fewer requests than this on either side, we do not judge
+    min_requests: int = 50            # both sides need this many requests before we can promote
+    min_signal_requests: int = 20     # below this on either side we report nothing at all
     error_ratio_jump: float = 0.02    # canary error ratio minus stable
     latency_factor: float = 1.5       # canary p99 over stable p99
     latency_min_ms: float = 50.0      # and at least this many ms slower
@@ -62,9 +63,16 @@ def collect_side(prom: Prometheus, service: str, pod_hash: str, window: str) -> 
 
 def compare(service: str, stable: SideStats, canary: SideStats, window_s: int,
             t: Thresholds | None = None) -> tuple[list[Evidence], bool]:
-    """Deterministic evidence, plus whether both sides had enough traffic to judge."""
+    """Deterministic evidence, plus whether there was enough traffic to promote.
+
+    Low traffic blocks a promote, never an abort: evidence is still reported
+    once both sides pass min_signal_requests.
+    """
     t = t or Thresholds()
-    enough = min(stable.rps, canary.rps) * window_s >= t.min_requests
+    fewest = min(stable.rps, canary.rps) * window_s
+    enough = fewest >= t.min_requests
+    if fewest < t.min_signal_requests:
+        return [], False
     found: list[Evidence] = []
 
     if canary.err_ratio - stable.err_ratio > t.error_ratio_jump:

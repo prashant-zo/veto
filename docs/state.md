@@ -31,6 +31,7 @@ part 3: compactor (log templates and redaction)
 - 5 scenario prs created with images in kind
 - collectors for prometheus, loki, github and kube, unit tested, live probe works
 - metric and edge compactor, unit tested, live checked on pr 2, 4 and the control
+- low traffic rule, open loop load generator
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -73,7 +74,7 @@ part 3: compactor (log templates and redaction)
 - base image: veto-shop:main-a13119d
 - shop libs: fastapi 0.162.0, starlette 1.10.0, uvicorn 0.54.0, httpx 0.28.1, otel sdk 1.45.2, instrumentation 0.66b2
 - shop: rollouts checkout, pricing, payments in ns shop, 2 replicas, canary setWeight 50 then pause, svc port 8080
-- loadgen: ns load, busybox wget about 5 rps to checkout
+- loadgen: ns load, busybox wget, open loop at 5 rps, each request in the background with a 5s timeout
 - query helpers: scripts/prom.sh and scripts/loki.sh
 - veto cli: make pf, then make probe SVC=checkout (uv run veto probe)
 - local port forwards: prometheus localhost:19090, loki localhost:13100 (scripts/pf.sh start|stop)
@@ -83,6 +84,7 @@ part 3: compactor (log templates and redaction)
 - edges come from client span metrics by server_address, counted per incoming request
 - httpx logs every outgoing call at INFO: HTTP Request: POST http://payments:8080/charge
 - compactor thresholds live in src/veto/compact/metrics.py (Thresholds)
+- low traffic blocks a promote, never an abort: under 20 requests a side no evidence, under 50 no promote
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
