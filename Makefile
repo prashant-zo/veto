@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -59,3 +59,9 @@ shop: ## deploy the shop and the load generator
 
 release: ## start a canary: make release SVC=checkout TAG=pr-1-abc1234
 	kubectl argo rollouts --context kind-veto -n shop set image $(SVC) $(SVC)=veto-shop:$(TAG)
+
+abort: ## abort a canary: make abort SVC=checkout
+	kubectl argo rollouts --context kind-veto -n shop abort $(SVC)
+
+promote: ## promote a canary: make promote SVC=checkout
+	kubectl argo rollouts --context kind-veto -n shop promote $(SVC)

@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 2: canary split check
+part 3: evidence bundle
 
 ## plan
 1. repo, setup, smoke test
@@ -27,6 +27,7 @@ part 2: canary split check
 - loki installed, otlp push and query tested
 - otel collector installed, traces to prometheus and logs to loki tested
 - shop repo and image built, shop deployed with load
+- canary split confirmed in edges, span metrics and logs, abort tested
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -72,6 +73,10 @@ part 2: canary split check
 - loadgen: ns load, busybox wget about 5 rps to checkout
 - query helpers: scripts/prom.sh and scripts/loki.sh
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
+- abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
+- promote: make promote SVC=checkout
+- test image veto-shop:pr-0-a13119d is the same code as main, only for canary tests
+- runbook: docs/runbook.md
 
 ## rules
 - commit and push after every step, short lowercase message
