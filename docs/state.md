@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 2: install otel collector
+part 2: create the shop repo and services
 
 ## plan
 1. repo, setup, smoke test

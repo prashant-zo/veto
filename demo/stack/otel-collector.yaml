@@ -1,0 +1,58 @@
+mode: daemonset
+fullnameOverride: otel-collector
+image:
+  repository: otel/opentelemetry-collector-contrib
+command:
+  name: otelcol-contrib
+service:
+  enabled: true
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8889"
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 384Mi
+presets:
+  logsCollection:
+    enabled: true
+  kubernetesAttributes:
+    enabled: true
+    extractAllPodLabels: true
+config:
+  receivers:
+    filelog:
+      include:
+        - /var/log/pods/shop_*/*/*.log
+  connectors:
+    servicegraph:
+      dimensions:
+        - k8s.pod.labels.rollouts-pod-template-hash
+      metrics_flush_interval: 15s
+    spanmetrics:
+      dimensions:
+        - name: server.address
+      metrics_flush_interval: 15s
+  exporters:
+    prometheus:
+      endpoint: ${env:MY_POD_IP}:8889
+      resource_to_telemetry_conversion:
+        enabled: true
+    otlphttp/loki:
+      endpoint: http://loki.monitoring.svc:3100/otlp
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [servicegraph, spanmetrics]
+      metrics:
+        receivers: [servicegraph, spanmetrics]
+        processors: [memory_limiter, batch]
+        exporters: [prometheus]
+      logs:
+        receivers: [filelog]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [otlphttp/loki]
