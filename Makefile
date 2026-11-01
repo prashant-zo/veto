@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe test pf probe
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -65,3 +65,21 @@ abort: ## abort a canary: make abort SVC=checkout
 
 promote: ## promote a canary: make promote SVC=checkout
 	kubectl argo rollouts --context kind-veto -n shop promote $(SVC)
+
+test: ## run unit tests
+	uv run pytest -q
+
+pf: ## port-forward prometheus and loki to localhost
+	@bash scripts/pf.sh start
+
+probe: ## ask every source about a rollout: make probe SVC=checkout
+	uv run --env-file .env veto probe --service $(SVC)
+
+test: ## run unit tests
+	uv run pytest -q
+
+pf: ## port-forward prometheus and loki to localhost
+	@bash scripts/pf.sh start
+
+probe: ## ask every source about a rollout: make probe SVC=checkout
+	uv run --env-file .env veto probe --service $(SVC)

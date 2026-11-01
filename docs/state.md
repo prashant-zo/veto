@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 3: collectors (prometheus, loki, github)
+part 3: compactor (metric deltas and call edges)
 
 ## plan
 1. repo, setup, smoke test
@@ -29,6 +29,7 @@ part 3: collectors (prometheus, loki, github)
 - shop repo and image built, shop deployed with load
 - canary split confirmed in edges, span metrics and logs, abort tested
 - 5 scenario prs created with images in kind
+- collectors for prometheus, loki, github and kube, unit tested, live probe works
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -73,6 +74,10 @@ part 3: collectors (prometheus, loki, github)
 - shop: rollouts checkout, pricing, payments in ns shop, 2 replicas, canary setWeight 50 then pause, svc port 8080
 - loadgen: ns load, busybox wget about 5 rps to checkout
 - query helpers: scripts/prom.sh and scripts/loki.sh
+- veto cli: make pf, then make probe SVC=checkout (uv run veto probe)
+- local port forwards: prometheus localhost:19090, loki localhost:13100 (scripts/pf.sh start|stop)
+- intent comes from the image tag read from the pod spec, never from telemetry, tag sha must equal pr head sha
+- label values are validated and quoted before going into promql or logql
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
@@ -91,6 +96,7 @@ part 3: collectors (prometheus, loki, github)
 - commit and push after every step, short lowercase message
 - no secrets in git, keys only in .env files or k8s secrets
 - read a file before changing it
+- git rm on the last file in a folder also deletes the folder, write new files first, then git rm the .gitkeep
 - in zsh templates write ${var} when a colon follows, $s:a is a zsh modifier
 - only muse in demo, eval and site until judging ends
 - show "Built with Muse Spark Open" in readme and site
