@@ -116,3 +116,21 @@ def test_secrets_never_reach_templates():
     st, found = run(traffic("c1", 100) + leak)
     assert st.redacted["secret_value"] == 1 and st.redacted["email"] == 1
     assert "hunter2" not in found[0].summary and "bob@" not in found[0].summary
+
+
+def test_loki_query_skips_traceback_bodies_and_recent_seconds():
+    import time
+
+    from veto.compact.logs import LAG_S, collect_logs
+
+    seen = []
+
+    class FakeLoki:
+        def lines(self, logql, since_s, limit, end_ns):
+            seen.append((logql, since_s, end_ns))
+            return []
+
+    collect_logs(FakeLoki(), "checkout", 120, ("aaa", None), ("bbb", time.time() - 30))
+    assert len(seen) == 3   # no startup query for a side with no start time
+    assert seen[0][0] == '{service_name="checkout"} !~ `^\\s` | rollouts_pod_template_hash="aaa"'
+    assert time.time_ns() - seen[0][2] >= LAG_S * 1_000_000_000

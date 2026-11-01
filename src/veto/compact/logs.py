@@ -19,6 +19,7 @@ from .redact import clean, redact
 
 LIMIT = 5000          # loki default max lines per query
 STARTUP_S = 90        # how much of a pod's first logs count as startup
+LAG_S = 10            # stop this far before now, so lines still being shipped are not cut in half
 
 LEVELS = {"DEBUG": "DEBUG", "INFO": "INFO", "WARN": "WARNING", "WARNING": "WARNING",
           "ERROR": "ERROR", "CRITICAL": "CRITICAL", "FATAL": "CRITICAL"}
@@ -33,6 +34,8 @@ _UUID = re.compile(r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{
 _HEX = re.compile(r"\b(?=[0-9a-fA-F]*\d)(?=[0-9a-fA-F]*[a-fA-F])[0-9a-fA-F]{6,}\b")
 _NUM = re.compile(r"(?<![\w<.])[-+]?\d+(?:\.\d+)?(?:ms|s|%)?(?![\w>])")
 _SPACE = re.compile(r"\s+")
+_TB_NOISE = re.compile(r"^(Traceback \(most recent call last\):|During handling of the above exception"
+                       r"|The above exception was the direct cause)")
 
 
 def _mask_text(s: str) -> str:
@@ -90,6 +93,8 @@ def records(lines: list[LogLine]) -> tuple[list[Record], Counter]:
         text = text.strip()
         if not text:
             continue
+        if _TB_NOISE.match(text):
+            continue
         m = _LEVEL.match(text)
         if m:
             if pod in pending:
@@ -140,23 +145,25 @@ def build_stats(stable_recent: list[LogLine], stable_startup: list[LogLine],
     return LogStats(s_recent, c_recent, s_total, c_total, lines, s_red + c_red, truncated)
 
 
-def _fetch(loki: Loki, service: str, pod_hash: str, since_s: int, end_ns: int | None = None) -> list[LogLine]:
-    logql = selector(service_name=service) + f" | rollouts_pod_template_hash={quote(pod_hash)}"
+def _fetch(loki: Loki, service: str, pod_hash: str, since_s: int, end_ns: int) -> list[LogLine]:
+    # indented lines are traceback bodies, skip them in loki: one crash is 30 lines and
+    # would eat the line limit. what we never fetch never reaches the model either.
+    logql = selector(service_name=service) + " !~ `^\\s`" + f" | rollouts_pod_template_hash={quote(pod_hash)}"
     return loki.lines(logql, since_s=since_s, limit=LIMIT, end_ns=end_ns)
 
 
-def _startup(loki: Loki, service: str, pod_hash: str, started: float | None) -> list[LogLine]:
+def _startup(loki: Loki, service: str, pod_hash: str, started: float | None, end_ns: int) -> list[LogLine]:
     if started is None:
         return []
-    end_ns = min(int((started + STARTUP_S) * 1e9), time.time_ns())
-    return _fetch(loki, service, pod_hash, STARTUP_S + 30, end_ns)
+    return _fetch(loki, service, pod_hash, STARTUP_S + 30, min(int((started + STARTUP_S) * 1e9), end_ns))
 
 
 def collect_logs(loki: Loki, service: str, window_s: int,
                  stable: tuple[str, float | None], canary: tuple[str, float | None]) -> LogStats:
     """stable and canary are (pod hash, unix time its containers started)."""
-    return build_stats(_fetch(loki, service, stable[0], window_s), _startup(loki, service, *stable),
-                       _fetch(loki, service, canary[0], window_s), _startup(loki, service, *canary))
+    end_ns = time.time_ns() - LAG_S * 1_000_000_000
+    return build_stats(_fetch(loki, service, stable[0], window_s, end_ns), _startup(loki, service, *stable, end_ns),
+                       _fetch(loki, service, canary[0], window_s, end_ns), _startup(loki, service, *canary, end_ns))
 
 
 @dataclass(frozen=True)

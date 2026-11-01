@@ -43,4 +43,5 @@ def gather(s: Settings, namespace: str, service: str, window: str) -> Gathered |
                         (stable_hash, kube.started_at(ns, stable_hash)),
                         (canary_hash, kube.started_at(ns, canary_hash)))
     found += compare_logs(svc, logs, stable.rps * ws, canary.rps * ws)
+    enough = enough and not logs.truncated   # we did not see every log line, so we cannot promote
     return Gathered(ns, svc, window, stable, canary, logs, found, enough)
