@@ -30,6 +30,9 @@ config:
     servicegraph:
       dimensions:
         - rollouts-pod-template-hash
+      store:
+        ttl: 10s
+        max_items: 10000
       metrics_flush_interval: 15s
     spanmetrics:
       dimensions:

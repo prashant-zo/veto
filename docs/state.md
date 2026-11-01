@@ -54,9 +54,14 @@ part 2: canary split check
 - otel collector chart 0.178.1, contrib v0.163.2, daemonset otel-collector-agent, svc otel-collector (otlp grpc 4317, http 4318), metrics on pod port 8889 scraped by prometheus
 - otel component names: file_log, k8s_attributes, otlp_http (old names deprecated)
 - pod labels become attributes named exactly like the label (run, rollouts-pod-template-hash), prometheus label rollouts_pod_template_hash
-- edge metric: traces_service_graph_request_total{client, server, failed}, hash dims expected as client_rollouts_pod_template_hash and server_rollouts_pod_template_hash (confirm with real rollout)
-- request metric: traces_span_metrics_calls_total{service_name, span_kind, span_name, status_code, server_address}
+- edge metric: traces_service_graph_request_total{client, server, failed, client_rollouts_pod_template_hash, server_rollouts_pod_template_hash}, confirmed, uninstrumented callers show as client "user"
+- request metric: traces_span_metrics_calls_total{service_name, span_kind, span_name, status_code, server_address, rollouts_pod_template_hash}, filter by span_kind, asgi also adds SPAN_KIND_INTERNAL spans
 - loki log fields: service_name, service_namespace, k8s_pod_name, k8s_namespace_name, pod labels by their own key
+- shop app env: OTEL_TRACES_EXPORTER=otlp_proto_http, OTEL_SEMCONV_STABILITY_OPT_IN=http, OTEL_BSP_SCHEDULE_DELAY=1000
+- pods need the app.kubernetes.io/name label, else service_name becomes the replicaset name
+- servicegraph store ttl 10s, with the 2s default about 20 percent of edges went to "unknown"
+- loki query: {service_name="checkout"} | rollouts_pod_template_hash="<hash>"
+- shop log format: LEVEL logger message key=value
 - prometheus kubernetes-pods job honors labels, so job and instance on span metrics come from the app
 - idle vm memory: 0.8 GiB used of 4.9 GiB
 - demo shop repo: prashant-zo/veto-demo-shop at .../DevOps/Project/veto-demo-shop, one image veto-shop:<tag>, built with make build [PR=n], loaded into kind
@@ -72,6 +77,7 @@ part 2: canary split check
 - commit and push after every step, short lowercase message
 - no secrets in git, keys only in .env files or k8s secrets
 - read a file before changing it
+- in zsh templates write ${var} when a colon follows, $s:a is a zsh modifier
 - only muse in demo, eval and site until judging ends
 - show "Built with Muse Spark Open" in readme and site
 - veto messages say they come from veto, never pose as a person
