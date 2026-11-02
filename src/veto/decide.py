@@ -8,7 +8,7 @@ from .bundle import SCHEMA, bundle_hash
 from .judge.model import Reply
 from .judge.parse import Answer, BadAnswer, parse_answer
 from .judge.prompt import messages
-from .policy.rules import Rules, ceiling, combine, floor
+from .policy.rules import Rules, ceiling, combine, floor, needs_person
 
 MAX_REASONING = 4000
 
@@ -35,7 +35,7 @@ class Decision:
     service: str
     canary_tag: str
     bundle_hash: str
-    stage: str              # floor: decided before the model, model: after it
+    stage: str              # floor or policy: decided before the model, model: after it
     ceiling: str
     reasons: list[str]
     summary: str
@@ -63,6 +63,12 @@ def decide(bundle: dict, ask: Callable[[list[dict]], Reply], rules: Rules | None
         more = f" (and {len(stop) - 1} more)" if len(stop) > 1 else ""
         return Decision("abort", stage="floor", ceiling="abort", reasons=stop,
                         summary=f"Aborted before the model ran. {stop[0]}{more}.", runs=[], **base)
+
+    person = needs_person(bundle)
+    if person:
+        return Decision("hold", stage="policy", ceiling="hold", reasons=person,
+                        summary=f"Held before the model ran. {person[0]}. A person has to say what this release is for.",
+                        runs=[], **base)
 
     cap, cap_reasons = ceiling(bundle)
     msgs = messages(bundle)

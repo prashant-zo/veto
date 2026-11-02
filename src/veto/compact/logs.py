@@ -66,6 +66,11 @@ def template_of(message: str) -> str:
     return _SPACE.sub(" ", "".join(out)).strip()[:MAX_TEMPLATE]
 
 
+def _template_or_attack(message: str) -> str:
+    """A line that talks to the reviewer stays as it is: masking key=value would hide its words."""
+    return " ".join(message.split())[:MAX_TEMPLATE] if attack_signs(message) else template_of(message)
+
+
 @dataclass(frozen=True)
 class Record:
     level: str
@@ -84,7 +89,7 @@ def records(lines: list[LogLine]) -> tuple[list[Record], Counter]:
 
     def close(pod: str) -> None:
         level, head, tail = pending.pop(pod)
-        out.append(Record(level, template_of(f"{head} | {tail}" if tail else head)))
+        out.append(Record(level, _template_or_attack(f"{head} | {tail}" if tail else head)))
 
     for ln in lines:
         pod = ln.labels.get("k8s_pod_name", "")
@@ -103,7 +108,7 @@ def records(lines: list[LogLine]) -> tuple[list[Record], Counter]:
         elif pod in pending:
             pending[pod][2] = text
         else:
-            out.append(Record("UNKNOWN", template_of(text)))
+            out.append(Record("UNKNOWN", _template_or_attack(text)))
     for pod in sorted(pending):
         close(pod)
     return out, redacted

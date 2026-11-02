@@ -1,6 +1,7 @@
 """The rules that decide, around the model.
 
 floor:   evidence bad enough to abort before the model runs.
+person:  no trustworthy PR to compare against, hold before the model runs.
 ceiling: the most the release can get. Any hard evidence caps it at hold.
 combine: the model answers checked against the bundle, then capped.
 The model can make a verdict stricter, never looser than the ceiling.
@@ -13,6 +14,7 @@ from ..compact.injection import STRONG_NAMES
 from ..judge.parse import VERDICTS, Answer
 
 ATTACKS = ("log_injection", "pr_injection")
+NO_INTENT = ("intent_missing", "intent_unavailable", "intent_sha_mismatch")
 CODE_BACKED = {"log_new": "+", "log_missing": "-"}   # soft log items must show up in added or removed lines
 
 
@@ -38,6 +40,12 @@ def floor(bundle: dict, rules: Rules) -> list[str]:
             if signs & STRONG_NAMES or len(signs) >= rules.attack_signs:
                 reasons.append(f"{e['id']}: {e['kind']}, the release carries text telling the reviewer to approve it")
     return reasons
+
+
+def needs_person(bundle: dict) -> list[str]:
+    """Without the PR the change was made under, there is nothing for the model to check."""
+    return [f"{e['id']}: {e['kind']}, there is no trustworthy PR to compare the canary against"
+            for e in bundle["evidence"] if e["kind"] in NO_INTENT]
 
 
 def ceiling(bundle: dict) -> tuple[str, list[str]]:

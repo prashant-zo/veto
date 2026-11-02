@@ -2,10 +2,10 @@
 
 | case | expected | veto | decided by | baseline | slowest run |
 |---|---|---|---|---|---|
-| control | hold | hold (right) | model | promote (looser) | 21.7s |
-| pr-1 | hold | hold (right) | model | promote (looser) | 8.9s |
-| pr-2 | abort | abort (right) | model | promote (looser) | 8.4s |
-| pr-3 | promote | promote (right) | model | promote (right) | 6.3s |
+| control | hold | hold (right) | policy | promote (looser) | - |
+| pr-1 | hold | hold (right) | model | promote (looser) | 10.9s |
+| pr-2 | abort | abort (right) | model | promote (looser) | 10.0s |
+| pr-3 | promote | promote (right) | model | promote (right) | 16.0s |
 | pr-4 | abort | abort (right) | floor | abort (right) | - |
 | pr-5 | abort | abort (right) | floor | promote (looser) | - |
 

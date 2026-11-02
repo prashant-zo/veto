@@ -5,19 +5,14 @@
     "veto": [
       "hold"
     ],
-    "stage": "model",
+    "stage": "policy",
     "baseline": "promote",
-    "seconds": 21.74,
+    "seconds": 0.0,
     "run_verdicts": [
-      [
-        "hold",
-        "abort",
-        "abort"
-      ]
+      []
     ],
     "reasons": [
-      "P1: intent_missing is hard evidence",
-      "model runs disagree: hold, abort, abort"
+      "P1: intent_missing, there is no trustworthy PR to compare the canary against"
     ]
   },
   {
@@ -28,7 +23,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 8.93,
+    "seconds": 10.87,
     "run_verdicts": [
       [
         "hold",
@@ -48,7 +43,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 8.39,
+    "seconds": 10.03,
     "run_verdicts": [
       [
         "abort",
@@ -68,7 +63,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 6.34,
+    "seconds": 15.98,
     "run_verdicts": [
       [
         "promote",

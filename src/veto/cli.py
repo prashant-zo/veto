@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import config
+from . import attacks, config
 from .bundle import collect as collect_bundle
 from .collect.github import GitHub, GitHubError
 from .collect.kube import Kube, KubeError, tag_of
@@ -189,6 +189,19 @@ def eval_cmd(args) -> int:
     return 0
 
 
+def attacks_cmd(args) -> int:
+    s = config.load()
+    eps = endpoints(s, only=args.only)
+    if not eps:
+        print("no model endpoint configured, check VETO_MODEL_* and VETO_FALLBACK_* in .env")
+        return 2
+    rows = attacks.run(Path(args.cases), ModelClient(eps, s.model_timeout).ask, args.workers)
+    md = attacks.save(rows, eps[0].model, Path(args.out))
+    print(md.read_text())
+    print(f"saved {md}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="veto")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -228,6 +241,13 @@ def main(argv: list[str] | None = None) -> int:
     ev2.add_argument("--repeat", type=int, default=1, help="decide each case this many times")
     ev2.add_argument("--out", default="eval/results")
     ev2.set_defaults(func=eval_cmd)
+
+    at = sub.add_parser("attacks", help="plant prompt injections in saved cases and count what gets through")
+    at.add_argument("--cases", default="eval/cases")
+    at.add_argument("--only", choices=["primary", "fallback"], help="use one model endpoint only")
+    at.add_argument("--workers", type=int, default=2, help="decisions at the same time, each runs the model 3 times")
+    at.add_argument("--out", default="eval/results")
+    at.set_defaults(func=attacks_cmd)
 
     args = p.parse_args(argv)
     try:

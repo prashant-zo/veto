@@ -38,6 +38,7 @@ part 6: attack suite next, blind prs after the tuesday noon cutoff
 - judge on muse spark open with meta fallback, floor, ceiling and promote checks, ai cannot approve property test
 - veto service in the cluster, argo analysis step, events on the rollout, live checked on pr 2, 1 and 3
 - eval harness with labels and a metrics-only baseline, first scores in eval/results
+- no pr or sha mismatch holds before the model, attack suite with 80 planted injections
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -110,6 +111,9 @@ part 6: attack suite next, blind prs after the tuesday noon cutoff
 - eval: make eval [ONLY=fallback] [REPEAT=3], labels in eval/labels.json, scores in eval/results (in git)
 - baseline in the eval checks only error rate and latency, like a usual canary analysis
 - the event summary comes from a run that agrees with the final verdict, else it says what the model said
+- no pr, sha mismatch or github down: hold before the model (stage policy), see adr 0010
+- attack suite: make attacks [ONLY=fallback], 16 payloads x 5 places, scores in eval/results/attacks-*.md, see adr 0012
+- detector on the suite: 20 stopped before the model, 15 flagged hard, 45 reach the model unflagged
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
