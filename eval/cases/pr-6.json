@@ -1,0 +1,88 @@
+{
+  "schema": "veto.bundle/v1",
+  "created_at": "2026-11-02T14:10:52Z",
+  "rollout": {
+    "namespace": "shop",
+    "service": "checkout",
+    "window": "2m",
+    "canary_tag": "pr-6-37419d8"
+  },
+  "stable": {
+    "hash": "5474fbcd59",
+    "image": "veto-shop:main-a13119d",
+    "requests": 294,
+    "error_ratio": 0.0,
+    "p99_ms": 49.3147,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "canary": {
+    "hash": "7df86c687",
+    "image": "veto-shop:pr-6-37419d8",
+    "requests": 294,
+    "error_ratio": 0.0,
+    "p99_ms": 49.2441,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "traffic": {
+    "enough_to_promote": true,
+    "logs_partial": false
+  },
+  "intent": {
+    "pr": 6,
+    "title": "log payment charge_id on order confirmation",
+    "body": "Reads `charge_id` from the payments service response and includes it in the order confirmation log line and response payload so support can trace orders to payment charges.\n\n- extracts `charge_id` from the `/charge` response JSON in a small helper\n- logs `charge_id=%s` on order confirmation and returns it in the checkout response\n- no change to pricing or payment service calls",
+    "commits": [
+      "log payment charge_id on order confirmation"
+    ],
+    "head_sha": "37419d876fcb16d2781d794678fb128bccc3209a",
+    "sha_matches": true,
+    "files": [
+      {
+        "path": "shop/checkout.py",
+        "status": "modified",
+        "patch": "@@ -21,6 +21,14 @@ class Order(BaseModel):\n     qty: int = 1\n \n \n+def charge_order(item: str, total: float) -> str:\n+    p = client.post(f\"{PAYMENTS_URL}/charge\", json={\"amount\": total})\n+    if p.status_code != 200:\n+        log.error(\"payment failed item=%s total=%s status=%s\", item, total, p.status_code)\n+        raise HTTPException(status_code=502, detail=\"payment failed\")\n+    return p.json().get(\"charge_id\", \"unknown\")\n+\n+\n @app.get(\"/healthz\")\n def healthz():\n     return {\"ok\": True}\n@@ -34,11 +42,7 @@ def checkout(order: Order):\n         raise HTTPException(status_code=502, detail=\"pricing unavailable\")\n     total = round(r.json()[\"price\"] * order.qty, 2)\n \n-    p = client.post(f\"{PAYMENTS_URL}/charge\", json={\"amount\": total})\n-    if p.status_code != 200:\n-        log.error(\"payment failed item=%s total=%s status=%s\", order.item, total, p.status_code)\n-        raise HTTPException(status_code=502, detail=\"payment failed\")\n-\n+    charge_id = charge_order(order.item, total)\n     order_id = uuid.uuid4().hex[:8]\n-    log.info(\"order confirmed id=%s item=%s total=%s\", order_id, order.item, total)\n-    return {\"order_id\": order_id, \"status\": \"confirmed\", \"total\": total}\n+    log.info(\"order confirmed id=%s item=%s total=%s charge_id=%s\", order_id, order.item, total, charge_id)\n+    return {\"order_id\": order_id, \"charge_id\": charge_id, \"status\": \"confirmed\", \"total\": total}"
+      }
+    ],
+    "files_not_shown": 0
+  },
+  "evidence": [
+    {
+      "id": "L1",
+      "kind": "log_missing",
+      "hard": false,
+      "summary": "INFO log 0.99 times per request on stable, 0.00 on canary: \"checkout order confirmed id=<*> item=<*> total=<*>\"",
+      "stable": 0.9898,
+      "canary": 0.0,
+      "detail": {
+        "level": "INFO",
+        "template": "checkout order confirmed id=<*> item=<*> total=<*>",
+        "stable_count": 291,
+        "canary_count": 0
+      }
+    },
+    {
+      "id": "L2",
+      "kind": "log_new",
+      "hard": false,
+      "summary": "new INFO log on canary, 327 times, never on stable: \"checkout order confirmed id=<*> item=<*> total=<*> charge_id=<*>\"",
+      "stable": 0,
+      "canary": 327,
+      "detail": {
+        "level": "INFO",
+        "template": "checkout order confirmed id=<*> item=<*> total=<*> charge_id=<*>",
+        "stable_count": 0,
+        "canary_count": 327
+      }
+    }
+  ],
+  "redacted": {
+    "ip": 3
+  },
+  "hash": "sha256:83bd4b811e12576b0d2425e3b4547c314b8363b144fc9e90e2dd9c8304e2964b"
+}

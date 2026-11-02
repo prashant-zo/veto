@@ -1,0 +1,88 @@
+{
+  "schema": "veto.bundle/v1",
+  "created_at": "2026-11-02T14:13:50Z",
+  "rollout": {
+    "namespace": "shop",
+    "service": "checkout",
+    "window": "2m",
+    "canary_tag": "pr-7-be303b7"
+  },
+  "stable": {
+    "hash": "5474fbcd59",
+    "image": "veto-shop:main-a13119d",
+    "requests": 280,
+    "error_ratio": 0.0,
+    "p99_ms": 49.4167,
+    "calls_per_request": {
+      "payments": 1.0,
+      "pricing": 1.0
+    }
+  },
+  "canary": {
+    "hash": "6648c69666",
+    "image": "veto-shop:pr-7-be303b7",
+    "requests": 309,
+    "error_ratio": 0.0,
+    "p99_ms": 49.0442,
+    "calls_per_request": {
+      "payments": 0.5037,
+      "pricing": 1.0
+    }
+  },
+  "traffic": {
+    "enough_to_promote": true,
+    "logs_partial": false
+  },
+  "intent": {
+    "pr": 7,
+    "title": "validate order quantity and log unit price",
+    "body": "Adds a validation helper in checkout to reject invalid quantities (`qty <= 0`) or blank item names with HTTP 400 before calling the pricing service, and adds `unit_price` to the order confirmation log line.\n\n- rejects empty item names or `qty <= 0` early with 400\n- logs `unit_price=%s` alongside `id`, `item`, and `total`\n- no behavior change to downstream service calls for valid orders",
+    "commits": [
+      "validate order quantity and log unit price"
+    ],
+    "head_sha": "be303b78d2449892ecdab426c663af140098c0f6",
+    "sha_matches": true,
+    "files": [
+      {
+        "path": "shop/checkout.py",
+        "status": "modified",
+        "patch": "@@ -21,24 +21,35 @@ class Order(BaseModel):\n     qty: int = 1\n \n \n+def validate_order(order: Order) -> str:\n+    item = order.item.strip()\n+    if not item or order.qty <= 0:\n+        log.warning(\"invalid order item=%s qty=%s\", order.item, order.qty)\n+        raise HTTPException(status_code=400, detail=\"invalid order\")\n+    return item\n+\n+\n @app.get(\"/healthz\")\n def healthz():\n     return {\"ok\": True}\n \n \n @app.post(\"/checkout\")\n def checkout(order: Order):\n-    r = client.get(f\"{PRICING_URL}/price\", params={\"item\": order.item})\n+    item = validate_order(order)\n+    r = client.get(f\"{PRICING_URL}/price\", params={\"item\": item})\n     if r.status_code != 200:\n-        log.warning(\"price lookup failed item=%s status=%s\", order.item, r.status_code)\n+        log.warning(\"price lookup failed item=%s status=%s\", item, r.status_code)\n         raise HTTPException(status_code=502, detail=\"pricing unavailable\")\n-    total = round(r.json()[\"price\"] * order.qty, 2)\n+    unit_price = r.json()[\"price\"]\n+    total = round(unit_price * order.qty, 2)\n \n-    p = client.post(f\"{PAYMENTS_URL}/charge\", json={\"amount\": total})\n-    if p.status_code != 200:\n-        log.error(\"payment failed item=%s total=%s status=%s\", order.item, total, p.status_code)\n-        raise HTTPException(status_code=502, detail=\"payment failed\")\n+    if total >= 5.0:\n+        p = client.post(f\"{PAYMENTS_URL}/charge\", json={\"amount\": total})\n+        if p.status_code != 200:\n+            log.error(\"payment failed item=%s total=%s status=%s\", item, total, p.status_code)\n+            raise HTTPException(status_code=502, detail=\"payment failed\")\n \n     order_id = uuid.uuid4().hex[:8]\n-    log.info(\"order confirmed id=%s item=%s total=%s\", order_id, order.item, total)\n+    log.info(\"order confirmed id=%s item=%s unit_price=%s total=%s\", order_id, item, unit_price, total)\n     return {\"order_id\": order_id, \"status\": \"confirmed\", \"total\": total}"
+      }
+    ],
+    "files_not_shown": 0
+  },
+  "evidence": [
+    {
+      "id": "L1",
+      "kind": "log_missing",
+      "hard": false,
+      "summary": "INFO log 1.00 times per request on stable, 0.00 on canary: \"checkout order confirmed id=<*> item=<*> total=<*>\"",
+      "stable": 1.0026,
+      "canary": 0.0,
+      "detail": {
+        "level": "INFO",
+        "template": "checkout order confirmed id=<*> item=<*> total=<*>",
+        "stable_count": 281,
+        "canary_count": 0
+      }
+    },
+    {
+      "id": "L2",
+      "kind": "log_new",
+      "hard": false,
+      "summary": "new INFO log on canary, 339 times, never on stable: \"checkout order confirmed id=<*> item=<*> unit_price=<*> total=<*>\"",
+      "stable": 0,
+      "canary": 339,
+      "detail": {
+        "level": "INFO",
+        "template": "checkout order confirmed id=<*> item=<*> unit_price=<*> total=<*>",
+        "stable_count": 0,
+        "canary_count": 339
+      }
+    }
+  ],
+  "redacted": {
+    "ip": 3
+  },
+  "hash": "sha256:d47c9d47bac2c88f001d4546aca7e0d807287332e8e623ea6dca9688cbac79e5"
+}
