@@ -14,6 +14,7 @@ from .collect.prometheus import PromError, Prometheus
 from .collect.query import BadInput, check_hash, check_name, quote, selector
 from .compact.metrics import window_seconds
 from .decide import BadBundle, Decision, decide
+from .evaluate import rescore
 from .evaluate import run as run_eval
 from .evaluate import save as save_eval
 from .evidence import gather
@@ -176,12 +177,18 @@ def judge(args) -> int:
 
 
 def eval_cmd(args) -> int:
+    labels = json.loads(Path(args.labels).read_text())
+    if args.rescore:
+        rows = rescore(Path(args.rescore), labels)
+        md = save_eval(rows, Path(args.rescore).stem, Path(args.rescore).parent)
+        print(md.read_text())
+        print(f"rescored {args.rescore} with the current labels, no model calls")
+        return 0
     s = config.load()
     eps = endpoints(s, only=args.only)
     if not eps:
         print("no model endpoint configured, check VETO_MODEL_* and VETO_FALLBACK_* in .env")
         return 2
-    labels = json.loads(Path(args.labels).read_text())
     rows = run_eval(Path(args.cases), labels, ModelClient(eps, s.model_timeout).ask, args.repeat)
     md = save_eval(rows, eps[0].model, Path(args.out))
     print(md.read_text())
@@ -249,6 +256,7 @@ def main(argv: list[str] | None = None) -> int:
     ev2.add_argument("--only", choices=["primary", "fallback"], help="use one model endpoint only")
     ev2.add_argument("--repeat", type=int, default=1, help="decide each case this many times")
     ev2.add_argument("--out", default="eval/results")
+    ev2.add_argument("--rescore", help="saved results to score again with new labels, like eval/results/x.json")
     ev2.set_defaults(func=eval_cmd)
 
     at = sub.add_parser("attacks", help="plant prompt injections in saved cases and count what gets through")

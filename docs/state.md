@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 7: readme and replay site, next blind prs after tuesday noon, then the video
+path 1 open source and the video, tracked in docs/roadmap.md, next post-blind fixes then the helm chart
 
 ## plan
 1. repo, setup, smoke test
@@ -12,6 +12,7 @@ part 7: readme and replay site, next blind prs after tuesday noon, then the vide
 6. eval and security tests
 7. helm chart and site
 8. video and submit
+9. open source anyone can deploy, see docs/roadmap.md
 
 ## done
 - repo with apache license, push protection on
@@ -42,6 +43,8 @@ part 7: readme and replay site, next blind prs after tuesday noon, then the vide
 - model reports attacks it sees, last change before the freeze
 - veto down test: argo aborts after 5 failed calls, stable keeps serving, see adr 0011
 - readme with the scores, replay site for github pages
+- blind prs from blind-a: pr 6 promote (right), pr 7 hold on frozen code (should be abort, not shipped), answers from the author
+- roadmap for path 1 and the video in docs/roadmap.md
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -146,8 +149,9 @@ part 7: readme and replay site, next blind prs after tuesday noon, then the vide
 - show "Built with Muse Spark Open" in readme and site
 - veto messages say they come from veto, never pose as a person
 - feature freeze from nov 2 evening: only fixes, no new rules or prompt changes before the blind eval
+- late labels are scored with make rescore, no model calls, the verdicts stay the frozen ones
 
 ## open
-- blind test prs: blind-a sent #6 and #7, waiting for friends, cutoff tuesday noon
+- blind test prs: blind-a sent #6 and #7 and gave the answers, more friends until tuesday noon
 - glimmer access not confirmed
 - modal and fireworks credits pending

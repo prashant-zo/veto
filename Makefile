@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve eval attacks site-data site-preview
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve eval attacks site-data site-preview rescore
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -83,7 +83,7 @@ evidence: ## canary evidence from metrics, edges and logs: make evidence SVC=che
 bundle: ## save the bundle the judge sees: make bundle SVC=checkout [CASE=pr-3 saves to eval/cases]
 	uv run --env-file .env veto bundle --service $(SVC) --window $(WINDOW) --out $(if $(CASE),eval/cases/$(CASE).json,.local/bundle.json)
 
-CASES ?= control pr-1 pr-2 pr-3 pr-4 pr-5
+CASES ?= control pr-1 pr-2 pr-3 pr-4 pr-5 pr-6 pr-7
 
 judge: ## judge a saved bundle: make judge CASE=pr-3 [ONLY=fallback]
 	uv run --env-file .env veto judge --bundle eval/cases/$(CASE).json --out eval/runs/$(CASE).json $(if $(ONLY),--only $(ONLY))
@@ -135,3 +135,6 @@ site-data: ## judge every case again and write site/data.json for the replay pag
 site-preview: ## serve the replay page on localhost:8090
 	@echo "open http://localhost:8090"
 	uv run python -m http.server 8090 -d site
+
+rescore: ## score saved results again with the current labels, no model calls
+	uv run veto eval --rescore eval/results/muse-spark-open-1026.json

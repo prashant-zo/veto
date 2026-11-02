@@ -97,3 +97,15 @@ def save(rows: list[Row], model: str, out_dir: Path) -> Path:
     md = out_dir / f"{slug}.md"
     md.write_text(report(rows, model))
     return md
+
+
+def rescore(results: Path, labels: dict) -> list[Row]:
+    """Apply labels that arrived later to saved results, without asking the model again.
+
+    This is how a blind PR gets scored: the verdicts stay exactly what the code decided
+    before anyone knew the answer.
+    """
+    rows = [Row(**r) for r in json.loads(results.read_text())]
+    for row in rows:
+        row.expected = labels.get(row.case, {}).get("expected")
+    return rows

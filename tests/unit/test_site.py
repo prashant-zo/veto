@@ -30,7 +30,7 @@ def repo(tmp_path):
 def test_site_data(tmp_path):
     data = build(repo(tmp_path))
     cases = {c["case"]: c for c in data["cases"]}
-    assert set(cases) == {"control", "pr-1", "pr-2", "pr-3", "pr-4", "pr-5"}
+    assert set(cases) == {"control", "pr-1", "pr-2", "pr-3", "pr-4", "pr-5", "pr-6", "pr-7"}
     assert cases["pr-2"]["decision"]["verdict"] == "hold" and cases["pr-2"]["baseline"] == "promote"
     assert cases["pr-5"]["decision"]["stage"] == "floor" and cases["control"]["pr"] is None
     assert len(cases["pr-3"]["decision"]["runs"][0]["reasoning"]) == 1200

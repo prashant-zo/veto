@@ -157,7 +157,7 @@
   },
   {
     "case": "pr-6",
-    "expected": null,
+    "expected": "promote",
     "veto": [
       "promote",
       "promote",
@@ -187,7 +187,7 @@
   },
   {
     "case": "pr-7",
-    "expected": null,
+    "expected": "abort",
     "veto": [
       "hold",
       "hold",

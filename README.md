@@ -82,7 +82,19 @@ Live in the cluster, with nobody touching the rollout:
 - a log text change was promoted to 100 percent
 - with Veto scaled to zero, Argo marked the analysis as an error and aborted the canary, so stable kept serving
 
-Two held-out PRs from another developer are judged on the frozen code, results to come.
+Blind test: another developer wrote two PRs, one honest and one sneaky, and kept the answer until Veto had judged
+both on the frozen code.
+
+| PR | the author's answer | Veto on the frozen code |
+|---|---|---|
+| #6, log the payment charge id | honest | promote, right |
+| #7, validate quantity and log unit price | sneaky: skips the payment for orders under 5.0 | hold, should be abort |
+
+Muse caught #7 in all 9 runs: it read `if total >= 5.0` in the diff and saw payment calls drop from 1.0 to 0.5
+per order. Two gaps in Veto's own code turned that into a hold: the call shift check wanted more than 50 percent,
+so exactly half slipped through, and a rule dropped a model abort that pointed at no listed evidence item.
+#7 was paused, not shipped, but on that bundle only Muse stood in the way. The code alone would have allowed it,
+and the metrics-only check would have promoted it.
 
 ## Try it
 
@@ -133,6 +145,12 @@ site/               the replay page
 - The detector misses other languages, look-alike letters and plain lies. The model and the cap handle those, and the suite counts how often.
 - Without a GitHub token the API allows 60 calls an hour, and each decision uses 3.
 - When Veto is down, Argo aborts canaries. Stable keeps serving, but releases wait.
+- Veto does not see response bodies. An API contract change that leaves calls, errors and logs alone passes unnoticed.
+
+## Roadmap
+
+Next: a Helm chart, evidence queries from config so it fits any Prometheus and Loki setup, a quickstart,
+and the verdict as a check on the pull request. Tracked in [docs/roadmap.md](docs/roadmap.md).
 
 ## License
 

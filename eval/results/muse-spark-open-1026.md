@@ -1,4 +1,4 @@
-# eval: meta-models/muse-spark-open-1026
+# eval: muse-spark-open-1026
 
 | case | expected | veto | decided by | baseline | slowest run |
 |---|---|---|---|---|---|
@@ -8,9 +8,9 @@
 | pr-3 | promote | promote (right), promote (right), promote (right) | model | promote (right) | 7.9s |
 | pr-4 | abort | abort (right), abort (right), abort (right) | floor | abort (right) | - |
 | pr-5 | abort | abort (right), abort (right), abort (right) | floor | promote (looser) | - |
-| pr-6 | held out | promote (held out), promote (held out), promote (held out) | model | promote (held out) | 9.7s |
-| pr-7 | held out | hold (held out), hold (held out), hold (held out) | model | promote (held out) | 11.3s |
+| pr-6 | promote | promote (right), promote (right), promote (right) | model | promote (right) | 9.7s |
+| pr-7 | abort | hold (looser), hold (looser), hold (looser) | model | promote (looser) | 11.3s |
 
-veto: 18 of 18 right, 0 stricter, 0 looser, 0 shipped that should not have
+veto: 21 of 24 right, 0 stricter, 3 looser, 0 shipped that should not have
 
-baseline: 6 of 18 right, 0 stricter, 12 looser, 12 shipped that should not have
+baseline: 9 of 24 right, 0 stricter, 15 looser, 15 shipped that should not have
