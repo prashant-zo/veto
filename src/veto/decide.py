@@ -88,6 +88,14 @@ def decide(bundle: dict, ask: Callable[[list[dict]], Reply], rules: Rules | None
         runs.append(run)
 
     verdict, reasons = combine(bundle, answers, errors, cap)
-    summary = next((r.summary for r in runs if r.summary), "")
-    return Decision(verdict, stage="model", ceiling=cap, reasons=cap_reasons + reasons, summary=summary,
-                    runs=runs, **base)
+    return Decision(verdict, stage="model", ceiling=cap, reasons=cap_reasons + reasons,
+                    summary=pick_summary(verdict, runs), runs=runs, **base)
+
+
+def pick_summary(verdict: str, runs: list[Run]) -> str:
+    """A run that agrees with the final verdict speaks for it. If none does, say whose words they are."""
+    same = next((r for r in runs if r.verdict == verdict and r.summary), None)
+    if same:
+        return same.summary
+    other = next((r for r in runs if r.summary), None)
+    return f"The model said {other.verdict}: {other.summary}" if other else ""

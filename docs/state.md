@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 6: attacks, eval and blind prs
+part 6: attack suite next, blind prs after the tuesday noon cutoff
 
 ## plan
 1. repo, setup, smoke test
@@ -37,6 +37,7 @@ part 6: attacks, eval and blind prs
 - evidence bundle with ids and hash, captured for pr 1 to 5 and the control in eval/cases
 - judge on muse spark open with meta fallback, floor, ceiling and promote checks, ai cannot approve property test
 - veto service in the cluster, argo analysis step, events on the rollout, live checked on pr 2, 1 and 3
+- eval harness with labels and a metrics-only baseline, first scores in eval/results
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -106,6 +107,9 @@ part 6: attacks, eval and blind prs
 - make image, make deploy (model keys from .env into secret veto-model), make gate-on SVC=checkout, make verdict, make gate-off
 - decision log: kubectl -n veto logs deploy/veto, one json line per decision
 - live judge latency: muse spark open 4 to 15s a run, meta fallback 5 to 12s, 3 runs in parallel
+- eval: make eval [ONLY=fallback] [REPEAT=3], labels in eval/labels.json, scores in eval/results (in git)
+- baseline in the eval checks only error rate and latency, like a usual canary analysis
+- the event summary comes from a run that agrees with the final verdict, else it says what the model said
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout

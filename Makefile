@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve eval
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -121,3 +121,6 @@ verdict: ## rollout status and the last veto event: make verdict SVC=checkout
 
 serve: ## run veto on localhost:8088 against the port-forwards
 	uv run --env-file .env uvicorn veto.serve.app:app --port 8088
+
+eval: ## score veto and a metrics-only baseline on eval/cases: make eval [ONLY=fallback] [REPEAT=3]
+	uv run --env-file .env veto eval --repeat $(or $(REPEAT),1) $(if $(ONLY),--only $(ONLY))

@@ -14,6 +14,8 @@ from .collect.prometheus import PromError, Prometheus
 from .collect.query import BadInput, check_hash, check_name, quote, selector
 from .compact.metrics import window_seconds
 from .decide import BadBundle, Decision, decide
+from .evaluate import run as run_eval
+from .evaluate import save as save_eval
 from .evidence import gather
 from .judge.model import ModelClient, endpoints
 
@@ -173,6 +175,20 @@ def judge(args) -> int:
     return 0
 
 
+def eval_cmd(args) -> int:
+    s = config.load()
+    eps = endpoints(s, only=args.only)
+    if not eps:
+        print("no model endpoint configured, check VETO_MODEL_* and VETO_FALLBACK_* in .env")
+        return 2
+    labels = json.loads(Path(args.labels).read_text())
+    rows = run_eval(Path(args.cases), labels, ModelClient(eps, s.model_timeout).ask, args.repeat)
+    md = save_eval(rows, eps[0].model, Path(args.out))
+    print(md.read_text())
+    print(f"saved {md}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="veto")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -204,6 +220,14 @@ def main(argv: list[str] | None = None) -> int:
     ju.add_argument("--only", choices=["primary", "fallback"], help="use one model endpoint only")
     ju.add_argument("--out", default=".local/decision.json")
     ju.set_defaults(func=judge)
+
+    ev2 = sub.add_parser("eval", help="score veto and a metrics-only baseline on the saved cases")
+    ev2.add_argument("--cases", default="eval/cases")
+    ev2.add_argument("--labels", default="eval/labels.json")
+    ev2.add_argument("--only", choices=["primary", "fallback"], help="use one model endpoint only")
+    ev2.add_argument("--repeat", type=int, default=1, help="decide each case this many times")
+    ev2.add_argument("--out", default="eval/results")
+    ev2.set_defaults(func=eval_cmd)
 
     args = p.parse_args(argv)
     try:
