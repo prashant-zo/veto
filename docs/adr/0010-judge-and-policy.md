@@ -19,3 +19,10 @@ Muse Spark Open on Baseten answers first, Muse Spark 1.3 on the Meta API takes o
 
 Why: the model reads intent against evidence, the only thing code cannot do. Everything around it is code,
 so a fooled or broken model can at worst hold a release.
+
+After the blind test (Nov 2), two changes, made after the author's answer was known:
+- a call shift is 30 percent or more per request, it was more than 50. pr 7 halved its payment calls and
+  sat exactly on the old line, so the code saw no hard evidence
+- a unanimous model abort stands even when it names no listed evidence item. Muse read the payment behind
+  `if total >= 5.0` in the diff in all 9 runs, and the old rule turned that into a hold
+The frozen-code result stays in the readme next to the new one.

@@ -18,9 +18,9 @@ from veto.policy.rules import ceiling
 CASES = sorted((Path(__file__).parents[2] / "eval" / "cases").glob("*.json"))
 EXPECTED_WITH_A_YES_MODEL = {"control": "hold", "pr-1": "hold", "pr-2": "hold", "pr-3": "promote",
                              "pr-4": "abort", "pr-5": "abort", "pr-6": "promote",
-                             # the frozen code found no call shift in pr-7, so only the model stood in the way.
-                             # this flips to hold once pr-7 is captured again with the post-blind fix
-                             "pr-7": "promote"}
+                             # captured again after the blind fix: the payment call shift is hard evidence now.
+                             # on the frozen bundle this was promote, only the model stood in the way
+                             "pr-7": "hold"}
 
 
 def reply(content):

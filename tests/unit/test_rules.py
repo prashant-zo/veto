@@ -43,7 +43,7 @@ def test_combine():
     assert combine(pr3, [answer("promote", both), answer("hold", both), answer("promote", both)], [],
                    "promote")[0] == "hold"
     assert combine(pr3, [None] * 3, ["run 1: bad json"], "promote")[0] == "hold"
-    assert combine(pr3, [answer("abort", both)] * 3, [], "promote")[0] == "hold"   # abort with nothing unexplained
+    assert combine(pr3, [answer("abort", both)] * 3, [], "promote")[0] == "abort"  # unanimous abort stands
     pr1 = case("pr-1")
     assert combine(pr1, [answer("promote", {"M1": True, "L1": True})] * 3, [], "hold")[0] == "hold"
     pr2 = case("pr-2")
@@ -55,9 +55,16 @@ def test_the_model_as_a_second_attack_detector():
     explained1, explained3 = {"M1": True, "L1": True}, {"L1": True, "L2": True}
     # every run sees an attack: the abort stands although every item is explained
     assert combine(pr1, [answer("abort", explained1, True)] * 3, [], "hold")[0] == "abort"
-    # only some runs see it: an abort with nothing unexplained falls back to hold
+    # only some runs see it: the abort still stands, three runs agreed on it
     runs = [answer("abort", explained1, True), answer("abort", explained1), answer("abort", explained1)]
-    assert combine(pr1, runs, [], "hold")[0] == "hold"
+    assert combine(pr1, runs, [], "hold")[0] == "abort"
     # one run seeing an attack is enough to stop a promote
     runs = [answer("promote", explained3), answer("promote", explained3, True), answer("promote", explained3)]
     assert combine(pr3, runs, [], "promote")[0] == "hold"
+
+
+def test_blind_pr7_frozen_bundle_now_aborts_when_all_runs_say_abort():
+    pr7 = case("pr-7")   # captured by the frozen code: only the two log items, both explained
+    runs = [answer("abort", {"L1": True, "L2": True})] * 3
+    verdict, reasons = combine(pr7, runs, [], "promote")
+    assert verdict == "abort" and "outside the listed evidence" in reasons[0]

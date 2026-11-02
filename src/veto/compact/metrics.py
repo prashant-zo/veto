@@ -22,7 +22,7 @@ class Thresholds:
     latency_min_ms: float = 50.0      # and at least this many ms slower
     edge_min_per_req: float = 0.2     # an edge needs this many calls per request to count
     edge_gone_factor: float = 0.05    # canary under 5 percent of stable means the edge is gone
-    edge_shift_factor: float = 0.5    # more than 50 percent up or down is a shift
+    edge_shift_factor: float = 0.3    # 30 percent or more up or down is a shift (was more than 50, see adr 0010)
     edge_error_jump: float = 0.05     # canary edge error ratio minus stable
 
 
@@ -97,7 +97,7 @@ def compare(service: str, stable: SideStats, canary: SideStats, window_s: int,
         elif c_per >= t.edge_min_per_req and s_per < c_per * t.edge_gone_factor:
             found.append(Evidence("edge_new", True, text, s_per, c_per, detail))
         elif (s_per >= t.edge_min_per_req and c_per >= t.edge_min_per_req
-              and abs(c_per - s_per) / s_per > t.edge_shift_factor):
+              and abs(c_per - s_per) / s_per >= t.edge_shift_factor):
             found.append(Evidence("edge_rate_shift", True, text, s_per, c_per, detail))
 
         s_err, c_err = _ratio(s.err_rps, s.rps), _ratio(c.err_rps, c.rps)

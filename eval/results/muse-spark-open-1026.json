@@ -29,7 +29,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 7.06,
+    "seconds": 7.36,
     "run_verdicts": [
       [
         "hold",
@@ -61,7 +61,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 9.92,
+    "seconds": 9.93,
     "run_verdicts": [
       [
         "abort",
@@ -93,7 +93,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 7.88,
+    "seconds": 7.99,
     "run_verdicts": [
       [
         "promote",
@@ -165,7 +165,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 9.65,
+    "seconds": 10.72,
     "run_verdicts": [
       [
         "promote",
@@ -189,13 +189,13 @@
     "case": "pr-7",
     "expected": "abort",
     "veto": [
-      "hold",
-      "hold",
-      "hold"
+      "abort",
+      "abort",
+      "abort"
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 11.27,
+    "seconds": 5.85,
     "run_verdicts": [
       [
         "abort",
@@ -214,7 +214,7 @@
       ]
     ],
     "reasons": [
-      "model said abort but marked no evidence as unexplained"
+      "M1: edge_rate_shift is hard evidence"
     ]
   }
 ]

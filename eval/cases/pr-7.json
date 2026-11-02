@@ -1,6 +1,6 @@
 {
   "schema": "veto.bundle/v1",
-  "created_at": "2026-11-02T14:13:50Z",
+  "created_at": "2026-11-02T18:16:12Z",
   "rollout": {
     "namespace": "shop",
     "service": "checkout",
@@ -10,9 +10,9 @@
   "stable": {
     "hash": "5474fbcd59",
     "image": "veto-shop:main-a13119d",
-    "requests": 280,
+    "requests": 320,
     "error_ratio": 0.0,
-    "p99_ms": 49.4167,
+    "p99_ms": 49.4197,
     "calls_per_request": {
       "payments": 1.0,
       "pricing": 1.0
@@ -21,11 +21,11 @@
   "canary": {
     "hash": "6648c69666",
     "image": "veto-shop:pr-7-be303b7",
-    "requests": 309,
+    "requests": 266,
     "error_ratio": 0.0,
-    "p99_ms": 49.0442,
+    "p99_ms": 49.0951,
     "calls_per_request": {
-      "payments": 0.5037,
+      "payments": 0.4592,
       "pricing": 1.0
     }
   },
@@ -53,16 +53,27 @@
   },
   "evidence": [
     {
+      "id": "M1",
+      "kind": "edge_rate_shift",
+      "hard": true,
+      "summary": "checkout calls payments 1.00 times per request on stable, 0.46 on canary",
+      "stable": 1.0,
+      "canary": 0.4592,
+      "detail": {
+        "destination": "payments"
+      }
+    },
+    {
       "id": "L1",
       "kind": "log_missing",
       "hard": false,
-      "summary": "INFO log 1.00 times per request on stable, 0.00 on canary: \"checkout order confirmed id=<*> item=<*> total=<*>\"",
-      "stable": 1.0026,
+      "summary": "INFO log 0.99 times per request on stable, 0.00 on canary: \"checkout order confirmed id=<*> item=<*> total=<*>\"",
+      "stable": 0.9875,
       "canary": 0.0,
       "detail": {
         "level": "INFO",
         "template": "checkout order confirmed id=<*> item=<*> total=<*>",
-        "stable_count": 281,
+        "stable_count": 316,
         "canary_count": 0
       }
     },
@@ -70,19 +81,19 @@
       "id": "L2",
       "kind": "log_new",
       "hard": false,
-      "summary": "new INFO log on canary, 339 times, never on stable: \"checkout order confirmed id=<*> item=<*> unit_price=<*> total=<*>\"",
+      "summary": "new INFO log on canary, 325 times, never on stable: \"checkout order confirmed id=<*> item=<*> unit_price=<*> total=<*>\"",
       "stable": 0,
-      "canary": 339,
+      "canary": 325,
       "detail": {
         "level": "INFO",
         "template": "checkout order confirmed id=<*> item=<*> unit_price=<*> total=<*>",
         "stable_count": 0,
-        "canary_count": 339
+        "canary_count": 325
       }
     }
   ],
   "redacted": {
-    "ip": 3
+    "ip": 2
   },
-  "hash": "sha256:d47c9d47bac2c88f001d4546aca7e0d807287332e8e623ea6dca9688cbac79e5"
+  "hash": "sha256:a8e41c33161386c77bf1e10e5bfa0f150460eeb14d8e1597e368941ee851ca68"
 }

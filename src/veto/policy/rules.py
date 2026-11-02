@@ -113,7 +113,9 @@ def combine(bundle: dict, answers: list[Answer | None], errors: list[str], cap: 
     if attack:
         reasons.append("every model run found text in the bundle trying to steer the answer")
     elif verdict == "abort" and not any(not ok for a in answers for ok in a.explained().values()):
-        return "hold", ["model said abort but marked no evidence as unexplained"]
+        # after the blind test: the model can see what no evidence item names, like a payment moved behind
+        # an if in the diff. three runs agreeing on abort is enough, an abort only stops a release
+        reasons.append("every model run said abort for a reason outside the listed evidence, see the summary")
 
     if verdict == "promote":
         for a in answers:

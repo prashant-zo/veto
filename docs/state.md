@@ -150,6 +150,8 @@ path 1 open source and the video, tracked in docs/roadmap.md, next post-blind fi
 - veto messages say they come from veto, never pose as a person
 - feature freeze from nov 2 evening: only fixes, no new rules or prompt changes before the blind eval
 - late labels are scored with make rescore, no model calls, the verdicts stay the frozen ones
+- after the blind test: edge shift is 30 percent or more (was more than 50), a unanimous model abort stands, see adr 0010
+- eval/cases/pr-7.json is captured again with the fix, the frozen-code bundle is in git at 464d394
 
 ## open
 - blind test prs: blind-a sent #6 and #7 and gave the answers, more friends until tuesday noon

@@ -6,7 +6,7 @@ Hard deadline: Wed Nov 4, 9 PM ET (Thu Nov 5, 7:30 AM IST). Marks: [ ] todo, [~]
 ## hackathon close
 - [x] blind prs judged on the frozen code: pr 6 right, pr 7 held instead of aborted, nothing shipped
 - [x] blind labels from the author, scored without asking the model again (make rescore)
-- [ ] post-blind fixes: a call shift of exactly 50 percent counts, a unanimous model abort stands.
+- [~] post-blind fixes: a call shift of 30 percent or more counts, a unanimous model abort stands.
       pr 7 captured again, eval and attacks run again, readme shows before and after
 - [ ] video script approved
 - [ ] animated scenes rendered

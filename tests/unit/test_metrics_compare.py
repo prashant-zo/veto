@@ -65,3 +65,14 @@ def test_low_traffic_still_shows_hard_evidence():
     c = side("b", rps=0.41, err=1.0, payments=(0.41, 0.41))
     found, enough = compare("checkout", s, c, 120)
     assert kinds(found) == ["edge_errors", "error_rate_up"] and not enough
+
+
+def test_half_the_calls_gone_is_a_shift():
+    # the blind pr 7: payments called on 2 of 4 items, 1.0 per request on stable, 0.5 on canary.
+    # the old line was "more than 50 percent", so exactly half slipped through
+    s = side("a", pricing=(2.0, 0.0), payments=(2.0, 0.0))
+    for canary_payments in (1.0, 1.04, 0.96):
+        c = side("b", pricing=(2.0, 0.0), payments=(canary_payments, 0.0))
+        assert kinds(compare("checkout", s, c, 120)[0]) == ["edge_rate_shift"]
+    calm = side("b", pricing=(2.0, 0.0), payments=(1.9, 0.0))
+    assert compare("checkout", s, calm, 120)[0] == []
