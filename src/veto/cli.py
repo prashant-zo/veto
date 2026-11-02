@@ -13,7 +13,9 @@ from .collect.loki import Loki, LokiError
 from .collect.prometheus import PromError, Prometheus
 from .collect.query import BadInput, check_hash, check_name, quote, selector
 from .compact.metrics import window_seconds
+from .decide import BadBundle, Decision, decide
 from .evidence import gather
+from .judge.model import ModelClient, endpoints
 
 
 def probe(args) -> int:
@@ -127,6 +129,50 @@ def bundle_cmd(args) -> int:
     return 0
 
 
+def show(d: Decision) -> None:
+    print(f"veto: {d.verdict.upper()} {d.service} {d.canary_tag} (bundle {d.bundle_hash[:19]})")
+    print(f"stage: {d.stage}, ceiling: {d.ceiling}")
+    for n, r in enumerate(d.runs, 1):
+        state = r.verdict or f"failed: {r.error}"
+        print(f"  run {n}: {r.label} {r.model} {r.seconds}s {state}, reasoning {len(r.reasoning)} chars")
+    if d.runs and d.runs[0].findings:
+        for f in d.runs[0].findings:
+            print(f"    {f['id']} {'explained' if f['explained'] else 'NOT explained'}: {f['why']}")
+    for reason in d.reasons:
+        print(f"  why: {reason}")
+    if d.summary:
+        print(f"summary: {d.summary}")
+
+
+def judge(args) -> int:
+    s = config.load()
+    eps = endpoints(s, only=args.only)
+    if not eps:
+        print("no model endpoint configured, check VETO_MODEL_* and VETO_FALLBACK_* in .env")
+        return 2
+    if args.bundle:
+        bundle = json.loads(Path(args.bundle).read_text())
+    else:
+        try:
+            bundle = collect_bundle(args.namespace, args.service, args.window)
+        except (PromError, LokiError) as e:
+            print(f"evidence error: {e}")
+            return 3
+        if bundle is None:
+            print("no canary running")
+            return 1
+    try:
+        d = decide(bundle, ModelClient(eps, s.model_timeout).ask)
+    except BadBundle as e:
+        print(f"error: {e}")
+        return 2
+    show(d)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(d.to_dict(), indent=2, ensure_ascii=True) + "\n")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="veto")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -148,6 +194,16 @@ def main(argv: list[str] | None = None) -> int:
     bu.add_argument("--window", default="2m")
     bu.add_argument("--out", default=".local/bundle.json")
     bu.set_defaults(func=bundle_cmd)
+
+    ju = sub.add_parser("judge", help="decide promote, hold or abort for a saved bundle or a live canary")
+    src = ju.add_mutually_exclusive_group(required=True)
+    src.add_argument("--bundle", help="a saved bundle, like eval/cases/pr-3.json")
+    src.add_argument("--service", help="collect a fresh bundle for this rollout")
+    ju.add_argument("--namespace", default="shop")
+    ju.add_argument("--window", default="2m")
+    ju.add_argument("--only", choices=["primary", "fallback"], help="use one model endpoint only")
+    ju.add_argument("--out", default=".local/decision.json")
+    ju.set_defaults(func=judge)
 
     args = p.parse_args(argv)
     try:

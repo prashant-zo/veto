@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -82,3 +82,11 @@ evidence: ## canary evidence from metrics, edges and logs: make evidence SVC=che
 
 bundle: ## save the bundle the judge sees: make bundle SVC=checkout [CASE=pr-3 saves to eval/cases]
 	uv run --env-file .env veto bundle --service $(SVC) --window $(WINDOW) --out $(if $(CASE),eval/cases/$(CASE).json,.local/bundle.json)
+
+CASES ?= control pr-1 pr-2 pr-3 pr-4 pr-5
+
+judge: ## judge a saved bundle: make judge CASE=pr-3 [ONLY=fallback]
+	uv run --env-file .env veto judge --bundle eval/cases/$(CASE).json --out eval/runs/$(CASE).json $(if $(ONLY),--only $(ONLY))
+
+judge-all: ## judge every saved case one after another
+	@for c in $(CASES); do $(MAKE) --no-print-directory judge CASE=$$c ONLY=$(ONLY); echo; done

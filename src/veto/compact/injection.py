@@ -23,6 +23,7 @@ _WEAK = [
     ("do not report", r"\b(do\s+not|don'?t|never)\s+(flag|report|mention|abort|block|hold)\b"),
     ("role tag", r"(^|\s)(system|assistant)\s*:"),
 ]
+STRONG_NAMES = frozenset(name for name, _ in _STRONG)
 _STRONG_RE = [(name, re.compile(p, re.IGNORECASE)) for name, p in _STRONG]
 _WEAK_RE = [(name, re.compile(p, re.IGNORECASE)) for name, p in _WEAK]
 

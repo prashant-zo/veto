@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 4: judge and policy
+part 5: service and argo wiring
 
 ## plan
 1. repo, setup, smoke test
@@ -35,6 +35,7 @@ part 4: judge and policy
 - log compactor with redaction and injection signs, live checked on the control, pr 3, 4 and 5
 - traceback bodies skipped in loki, partial logs block a promote
 - evidence bundle with ids and hash, captured for pr 1 to 5 and the control in eval/cases
+- judge on muse spark open with meta fallback, floor, ceiling and promote checks, ai cannot approve property test
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -95,6 +96,10 @@ part 4: judge and policy
 - no pr, a tag sha that is not the pr head, github down, or pr text aimed at the reviewer are hard evidence
 - github api without a token allows 60 calls an hour, one bundle uses 3
 - blind pr bundles are captured only at eval time, after the feature freeze
+- policy: abort before the model at 10 points more errors or an attack, any hard evidence caps at hold, see adr 0010
+- promote needs 3 agreeing runs, every evidence id explained, and soft log items found in the diff
+- fallback model in .env as VETO_FALLBACK_BASE_URL, VETO_FALLBACK_NAME, VETO_FALLBACK_API_KEY
+- judge a saved case: make judge CASE=pr-3 [ONLY=fallback], all cases: make judge-all, decisions land in eval/runs (not in git)
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
