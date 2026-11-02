@@ -160,6 +160,7 @@ path 1 open source and the video, tracked in docs/roadmap.md, now the one chart 
 - first make deploy with the chart needs the old kubectl applied veto objects deleted (the pod selector changed)
 - examples (argo cd, flux, terraform, kustomize overlay) live in examples/, kustomize refuses an overlay inside its own base
 - kubectl apply on the helm installed objects warns about last-applied-configuration, harmless, use one tool per cluster
+- ci and release pin helm v3.20.2 (same as the laptop), the runner's own helm rendered install.yaml differently
 
 ## open
 - blind test prs: blind-a sent #6 and #7 and gave the answers, more friends until tuesday noon

@@ -22,9 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # the same helm as the laptop that renders install.yaml, other versions print it slightly differently
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.20.2
+      - run: helm version
       - name: chart lints
         run: helm lint deploy/helm/veto --set model.existingSecret=veto-model --set evidence.githubRepo=your-org/your-app
       - name: install.yaml was rendered from the current chart
-        run: make manifests && git diff --exit-code deploy/install.yaml
+        run: make manifests && git diff --exit-code deploy/install.yaml || { echo "run make manifests with helm v3.20.2 and commit deploy/install.yaml"; exit 1; }
       - name: kustomize example builds
         run: kubectl kustomize examples/kustomize > /dev/null
