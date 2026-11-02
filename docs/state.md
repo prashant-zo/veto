@@ -1,7 +1,7 @@
 # state
 
 ## now
-path 1 open source and the video, tracked in docs/roadmap.md, veto ui done, next the video
+path 1 open source and the video, tracked in docs/roadmap.md, v0.2.0 with the veto ui, then the video script
 
 ## plan
 1. repo, setup, smoke test
@@ -49,6 +49,7 @@ path 1 open source and the video, tracked in docs/roadmap.md, veto ui done, next
 - one chart install for helm, kubectl, kustomize, argo cd, flux and terraform, see adr 0013
 - v0.1.0 released: image and chart on ghcr.io, both public
 - veto ui: veto serves the replay page with its own live decisions, see adr 0014
+- veto ui live on kind: pr 2 judged in the cluster, aborted, shown on the page next to the metrics-only promote
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -145,6 +146,18 @@ path 1 open source and the video, tracked in docs/roadmap.md, veto ui done, next
   #6 blind-a veto-shop:pr-6-37419d8 held out, answer comes from the author after the eval
   #7 blind-a veto-shop:pr-7-be303b7 held out, answer comes from the author after the eval
 
+## submission
+- where: the cerebral valley platform, indie track, solo
+- due wed nov 4, 9 pm et (thu nov 5, 7:30 am ist), our own target wed nov 4, 6 pm ist
+- the 3 minute demo video is the main thing judges look at, its link must work when signed out
+- gate first: fits a theme (build for your world or push the frontier) and really uses meta models
+- score: impact 30, use of meta models 25, demo 25, technical depth 20. top 5 per track go to a live final
+- bonus prizes that fit veto: best build on open weight models (muse spark open on baseten), most viral x post (counts until nov 8), community vote
+- checklist: public repo, working video link, everyone who contributed listed
+- source: the event page and the guide in github.com/meta-ai-hackathon/meta-hack (not clearly official), check the real form
+- video plan: animated scenes made with remotion, screen recordings and voice by prashant, edited in capcut
+- the video has to clear up the confusion with pr review bots like coderabbit and pr-agent: veto judges the running canary against the pr, it does not review code
+
 ## rules
 - commit and push after every step, short lowercase message
 - no secrets in git, keys only in .env files or k8s secrets
@@ -168,6 +181,8 @@ path 1 open source and the video, tracked in docs/roadmap.md, veto ui done, next
 - ci and release pin helm v3.20.2 (same as the laptop), the runner's own helm rendered install.yaml differently
 
 ## open
+- video: voice or captions only
+- blind-a: named in the submission or kept anonymous, his call
 - blind test prs: blind-a sent #6 and #7 and gave the answers, more friends until tuesday noon
 - glimmer access not confirmed
 - modal and fireworks credits pending

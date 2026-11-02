@@ -8,7 +8,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/prashant-zo/veto
-    targetRevision: v0.1.0
+    targetRevision: v0.2.0
     path: deploy/helm/veto
     helm:
       valuesObject:

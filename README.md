@@ -111,7 +111,7 @@ Veto needs Argo Rollouts, Prometheus with OpenTelemetry span metrics, and Loki.
 ```bash
 kubectl create namespace veto
 kubectl -n veto create secret generic veto-model --from-literal=VETO_MODEL_API_KEY=<your Muse key>
-helm install veto oci://ghcr.io/prashant-zo/charts/veto --version 0.1.0 -n veto \
+helm install veto oci://ghcr.io/prashant-zo/charts/veto --version 0.2.0 -n veto \
   --set model.existingSecret=veto-model --set evidence.githubRepo=your-org/your-app
 ```
 

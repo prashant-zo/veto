@@ -29,7 +29,7 @@ and `VETO_GITHUB_TOKEN` (raises the GitHub API limit from 60 calls an hour).
 **Helm**
 
 ```bash
-helm install veto oci://ghcr.io/prashant-zo/charts/veto --version 0.1.0 -n veto \
+helm install veto oci://ghcr.io/prashant-zo/charts/veto --version 0.2.0 -n veto \
   --set model.existingSecret=veto-model \
   --set evidence.githubRepo=your-org/your-app \
   --set evidence.prometheusUrl=http://prometheus-server.monitoring.svc:80 \
@@ -41,11 +41,11 @@ All settings are in [values.yaml](../deploy/helm/veto/values.yaml).
 **kubectl apply**
 
 ```bash
-kubectl apply -f https://github.com/prashant-zo/veto/releases/download/v0.1.0/install.yaml
+kubectl apply -f https://github.com/prashant-zo/veto/releases/download/v0.2.0/install.yaml
 kubectl -n veto set env deploy/veto VETO_GITHUB_REPO=your-org/your-app
 ```
 
-**Kustomize**: use `https://github.com/prashant-zo/veto//deploy?ref=v0.1.0` as a base, or copy
+**Kustomize**: use `https://github.com/prashant-zo/veto//deploy?ref=v0.2.0` as a base, or copy
 [examples/kustomize](../examples/kustomize) and change the urls and the repo.
 
 **Argo CD**: [examples/argocd-application.yaml](../examples/argocd-application.yaml)

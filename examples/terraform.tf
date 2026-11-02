@@ -5,7 +5,7 @@ resource "helm_release" "veto" {
   create_namespace = true
   repository       = "oci://ghcr.io/prashant-zo/charts"
   chart            = "veto"
-  version          = "0.1.0"
+  version          = "0.2.0"
 
   values = [yamlencode({
     model    = { existingSecret = "veto-model" }

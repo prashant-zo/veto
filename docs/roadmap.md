@@ -21,7 +21,7 @@ Hard deadline: Wed Nov 4, 9 PM ET (Thu Nov 5, 7:30 AM IST). Marks: [ ] todo, [~]
 2. [ ] evidence config: metric names, label names and the log selector come from values, defaults fit the otel setup.
        done when the tests pass with a second config and eval and attacks give the same results
 3. [ ] quickstart: from a cluster that already has argo rollouts, prometheus and loki to a gated rollout in 10 minutes
-4. [~] tag v0.1.0: image for amd64 and arm64 and the chart on ghcr.io, install.yaml on the release (release workflow
+4. [~] tag v0.1.0, then v0.2.0 with the veto ui: image for amd64 and arm64 and the chart on ghcr.io, install.yaml on the release (release workflow
        is ready), then list the chart on artifacthub
 5. [ ] second demo app in another language, so the evidence code is not only tested on python
 6. [ ] model endpoint docs and self hosted muse weights, after judging ends
