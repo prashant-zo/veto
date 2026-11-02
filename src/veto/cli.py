@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import attacks, config
+from . import attacks, config, site
 from .bundle import collect as collect_bundle
 from .collect.github import GitHub, GitHubError
 from .collect.kube import Kube, KubeError, tag_of
@@ -202,6 +202,15 @@ def attacks_cmd(args) -> int:
     return 0
 
 
+def site_cmd(args) -> int:
+    data = site.write(Path("."), Path(args.out))
+    missing = [c["case"] for c in data["cases"] if c["decision"] is None]
+    print(f"wrote {args.out}: {len(data['cases'])} cases, attacks {'yes' if data['attacks'] else 'no'}")
+    if missing:
+        print(f"no decision for the current bundle of: {', '.join(missing)}, run make judge-all first")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="veto")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -248,6 +257,10 @@ def main(argv: list[str] | None = None) -> int:
     at.add_argument("--workers", type=int, default=2, help="decisions at the same time, each runs the model 3 times")
     at.add_argument("--out", default="eval/results")
     at.set_defaults(func=attacks_cmd)
+
+    si = sub.add_parser("site", help="write site/data.json for the replay page, no model calls")
+    si.add_argument("--out", default="site/data.json")
+    si.set_defaults(func=site_cmd)
 
     args = p.parse_args(argv)
     try:

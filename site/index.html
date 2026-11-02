@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veto replay</title>
+<meta name="description" content="Replay how Veto judged each canary release: the evidence, what Muse Spark Open said, and what the gate decided.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --panel: #e4e8e1;
+    --sheet: #f5f6f2;
+    --ink: #18222d;
+    --muted: #56626d;
+    --line: #b6bfb5;
+    --go: #19824a;
+    --wait: #b77d00;
+    --stop: #c2361e;
+    --off: #c9cfc7;
+    --add: #dcefe1;
+    --del: #f6dfd9;
+    --focus: #1f5fbf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --panel: #12181e;
+      --sheet: #1a2229;
+      --ink: #e2e7ea;
+      --muted: #97a3ad;
+      --line: #36424c;
+      --go: #3dbe76;
+      --wait: #e8b23a;
+      --stop: #ee6a4f;
+      --off: #2c363f;
+      --add: #173326;
+      --del: #3a1f1a;
+      --focus: #7fb0ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--panel);
+    color: var(--ink);
+    font: 400 17px/1.55 "Overpass", system-ui, sans-serif;
+  }
+  a { color: inherit; text-underline-offset: 3px; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+  header.top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 22px 0 0; }
+  .mark { font-weight: 800; font-size: 22px; letter-spacing: -0.01em; text-decoration: none; }
+  nav.links { display: flex; gap: 18px; flex-wrap: wrap; font-size: 15px; }
+  nav.links a { color: var(--muted); }
+  nav.links a:hover { color: var(--ink); }
+
+  .hero { padding: 56px 0 8px; }
+  .hero h1 {
+    font-weight: 800; font-size: clamp(34px, 5.4vw, 60px); line-height: 1.04;
+    letter-spacing: -0.025em; margin: 0; max-width: 17ch;
+  }
+  .hero p { max-width: 62ch; color: var(--muted); font-size: 19px; margin: 22px 0 0; }
+  .hero p strong { color: var(--ink); font-weight: 600; }
+
+  /* the track: one station per release, a signal lamp for veto and one for the baseline */
+  .track { margin: 44px 0 0; position: relative; }
+  .track-scroll { overflow-x: auto; padding: 6px 2px 10px; }
+  .rails { display: grid; grid-template-columns: 132px 1fr; row-gap: 18px; min-width: calc(132px + var(--n, 6) * 64px); }
+  .rail-name { font-size: 14px; color: var(--muted); line-height: 1.35; padding-top: 6px; }
+  .rail-name b { color: var(--ink); font-weight: 600; display: block; font-size: 15px; }
+  .rail { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: start; }
+  /* the line runs through the centre of the lamps: padding 4px + half of a 30px lamp */
+  .rail::before { content: ""; position: absolute; left: 0; right: 0; top: 19px; height: 4px; transform: translateY(-50%); background: var(--ink); border-radius: 2px; }
+  .rail.base::before { top: 13px; height: 2px; background: repeating-linear-gradient(90deg, var(--muted) 0 10px, transparent 10px 18px); }
+  .station {
+    position: relative; justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    background: none; border: 0; padding: 4px 6px; color: inherit; font: inherit; cursor: pointer;
+  }
+  .lamp {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--off);
+    border: 4px solid var(--panel); box-shadow: 0 0 0 2px var(--ink);
+  }
+  .rail.base .lamp { width: 18px; height: 18px; border-width: 3px; box-shadow: 0 0 0 1.5px var(--muted); }
+  .lamp.promote { background: var(--go); }
+  .lamp.hold { background: var(--wait); }
+  .lamp.abort { background: var(--stop); }
+  .station .tag { font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .station .verd { font-size: 13px; color: var(--muted); margin-top: -6px; }
+  .station[aria-pressed="true"] .lamp { box-shadow: 0 0 0 2px var(--ink), 0 0 0 7px var(--panel), 0 0 0 9px var(--ink); }
+  .station[aria-pressed="true"] .tag { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+  .base-row .station { cursor: default; }
+  .wrong { font-size: 12px; color: var(--stop); font-weight: 600; margin-top: -4px; }
+  .track-note { color: var(--muted); font-size: 15px; margin: 10px 0 0; max-width: 70ch; }
+
+  /* the replay of one release */
+  .replay { margin: 40px 0 0; background: var(--sheet); border: 2px solid var(--ink); border-radius: 10px; }
+  .verdict { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; padding: 26px 26px 22px; border-bottom: 2px solid var(--ink); }
+  .aspect { width: 66px; height: 66px; border-radius: 50%; background: var(--off); border: 6px solid var(--sheet); box-shadow: 0 0 0 3px var(--ink); }
+  .aspect.promote { background: var(--go); }
+  .aspect.hold { background: var(--wait); }
+  .aspect.abort { background: var(--stop); }
+  @media (prefers-reduced-motion: no-preference) {
+    .aspect.lit { animation: lit 420ms ease-out; }
+    @keyframes lit { from { filter: brightness(0.4) saturate(0.2); } to { filter: none; } }
+  }
+  .verdict h2 { margin: 0; font-size: clamp(26px, 3.6vw, 38px); line-height: 1.1; letter-spacing: -0.015em; font-weight: 800; }
+  .verdict .sub { margin: 6px 0 0; color: var(--muted); }
+  .verdict .sub b { color: var(--ink); font-weight: 600; }
+  .summary { padding: 18px 26px; border-bottom: 1px solid var(--line); font-size: 19px; }
+  .summary p { margin: 0; max-width: 72ch; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; }
+  .col { padding: 22px 26px 26px; min-width: 0; }
+  .col + .col { border-left: 1px solid var(--line); }
+  .col h3, .wide h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 12px; }
+  .wide { padding: 22px 26px 26px; border-top: 1px solid var(--line); }
+  .pr-title { font-weight: 800; font-size: 21px; margin: 0 0 8px; line-height: 1.25; }
+  .pr-body { white-space: pre-wrap; margin: 0 0 14px; max-width: 70ch; overflow-wrap: anywhere; }
+  .none { color: var(--muted); font-style: italic; margin: 0; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; font-weight: 600; }
+  pre.diff { font: 400 13px/1.5 "Overpass Mono", ui-monospace, monospace; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 0; overflow-x: auto; margin: 10px 0 0; }
+  pre.diff span { display: block; padding: 0 12px; white-space: pre; }
+  pre.diff .add { background: var(--add); }
+  pre.diff .del { background: var(--del); }
+  pre.diff .hunk { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .ev { list-style: none; margin: 18px 0 0; padding: 0; }
+  .ev li { display: grid; grid-template-columns: 44px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .ev .id { font-weight: 800; }
+  .ev .kind { font-weight: 600; }
+  .ev .hard { color: var(--stop); }
+  .ev .soft { color: var(--muted); }
+  .ev .text { overflow-wrap: anywhere; }
+  .findings { list-style: none; padding: 0; margin: 0; }
+  .findings li { display: grid; grid-template-columns: 44px 150px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .findings .id { font-weight: 800; }
+  .yes { color: var(--go); font-weight: 600; }
+  .no { color: var(--stop); font-weight: 600; }
+  .reasons { margin: 0; padding-left: 20px; }
+  .reasons li { margin: 4px 0; overflow-wrap: anywhere; }
+  .runs { color: var(--muted); font-size: 15px; margin: 14px 0 0; }
+  .reasoning { white-space: pre-wrap; font-size: 15px; color: var(--muted); max-width: 80ch; margin: 8px 0 0; }
+
+  section.block { margin: 72px 0 0; }
+  section.block > h2 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.1; letter-spacing: -0.015em; margin: 0 0 8px; font-weight: 800; }
+  section.block > p { color: var(--muted); max-width: 66ch; margin: 0 0 22px; }
+  .line-diagram { list-style: none; margin: 0; padding: 0; counter-reset: step; max-width: 76ch; }
+  .line-diagram li { position: relative; padding: 0 0 22px 52px; counter-increment: step; }
+  .line-diagram li::before {
+    content: counter(step); position: absolute; left: 0; top: -2px; width: 30px; height: 30px; border-radius: 50%;
+    border: 3px solid var(--ink); background: var(--sheet); display: grid; place-items: center; font-weight: 800; font-size: 14px;
+  }
+  .line-diagram li::after { content: ""; position: absolute; left: 14px; top: 30px; bottom: 0; width: 3px; background: var(--ink); }
+  .line-diagram li:last-child::after { display: none; }
+  .line-diagram b { font-weight: 800; }
+  .scoreboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; }
+  .board { background: var(--sheet); border: 2px solid var(--ink); border-radius: 10px; padding: 20px 22px; }
+  .board h3 { margin: 0 0 10px; font-size: 19px; font-weight: 800; }
+  .board .big { font-size: 15px; color: var(--muted); margin: 12px 0 0; }
+  .attack-table td:nth-child(3) { overflow-wrap: anywhere; }
+  footer { margin: 80px 0 0; padding: 24px 0 40px; border-top: 2px solid var(--ink); color: var(--muted); font-size: 15px; display: flex; flex-wrap: wrap; gap: 8px 28px; }
+  footer strong { color: var(--ink); }
+  .error { background: var(--sheet); border: 2px solid var(--stop); border-radius: 10px; padding: 18px 22px; margin-top: 30px; }
+
+  @media (max-width: 600px) {
+    header.top { flex-direction: column; gap: 6px; }
+    .rails { grid-template-columns: 1fr; min-width: calc(var(--n, 6) * 56px); row-gap: 6px; }
+    .rail-name { padding-top: 0; }
+    .rail-name b { display: inline; margin-right: 6px; }
+    .rail + .rail-name { margin-top: 12px; }
+  }
+  @media (max-width: 820px) {
+    .cols { grid-template-columns: 1fr; }
+    .col + .col { border-left: 0; border-top: 1px solid var(--line); }
+    .findings li { grid-template-columns: 44px 1fr; }
+    .findings li .why { grid-column: 2; }
+    .verdict { padding: 20px; gap: 16px; }
+    .aspect { width: 50px; height: 50px; border-width: 5px; }
+    .col, .wide, .summary { padding-left: 18px; padding-right: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="mark" href="#">Veto</a>
+    <nav class="links" aria-label="Page">
+      <a href="#how">How it decides</a>
+      <a href="#scores">Scores</a>
+      <a href="https://github.com/prashant-zo/veto">Source on GitHub</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>Did this release do what its pull request says, and nothing else?</h1>
+    <p>Veto is a gate for Argo Rollouts canaries. It compares the canary with stable, reads the pull request, and asks Muse Spark Open to explain every difference. <strong>The AI can explain a change. It can never approve one.</strong></p>
+  </section>
+
+  <div class="track" aria-label="Releases">
+    <div class="track-scroll">
+      <div class="rails" id="rails"></div>
+    </div>
+    <p class="track-note">Each stop is a real canary from the demo shop. The top line is Veto. The dashed line is a usual canary check that only looks at error rate and latency. Pick a release to replay it.</p>
+  </div>
+
+  <div id="replay"></div>
+
+  <section class="block" id="how">
+    <h2>How it decides</h2>
+    <p>Code does everything code can do. The model only answers the one question code cannot: does the pull request explain what changed?</p>
+    <ol class="line-diagram">
+      <li><b>Collect.</b> Request and call metrics from OpenTelemetry in Prometheus, logs from Loki, and the pull request behind the image tag. Canary and stable are split by their pod hash.</li>
+      <li><b>Compact and clean.</b> Differences become numbered evidence. Logs and PR text are cleaned, secrets are redacted, and text aimed at the reviewer is flagged. The bundle gets a hash.</li>
+      <li><b>Floor.</b> A loud failure, or a release that tells the reviewer to approve it, is aborted before the model runs.</li>
+      <li><b>No intent, no decision.</b> Without a pull request that matches the image, a person decides.</li>
+      <li><b>Ask Muse three times.</b> Muse Spark Open explains every evidence item against the pull request. All three runs must agree. If Baseten fails, Muse Spark 1.3 on the Meta API answers.</li>
+      <li><b>Check the answer.</b> A promote must explain every item, log changes must be in the diff, and no run may have seen an attack.</li>
+      <li><b>Cap it.</b> Any hard evidence means hold at most. Argo continues on promote, aborts on abort, and pauses for a person on hold.</li>
+    </ol>
+  </section>
+
+  <section class="block" id="scores">
+    <h2>Scores</h2>
+    <p>Every saved release was judged several times by Veto and once by the metrics-only check. The attack suite plants prompt injections in real bundles.</p>
+    <div class="scoreboard" id="scoreboard"></div>
+    <details id="attack-details">
+      <summary>Every attack and what happened to it</summary>
+      <div id="attack-table"></div>
+    </details>
+  </section>
+
+  <footer>
+    <span><strong>Built with Muse Spark Open.</strong> Muse Spark Open is under the Muse Model License from Meta.</span>
+    <span>Veto is Apache-2.0. Made by prashant-zo for the Meta Global AI Developer Hackathon, Nov 2026.</span>
+    <span id="generated"></span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+// every string from the data goes in with textContent: PR text and logs are written by strangers
+const VERDICT_WORD = { promote: "Promote", hold: "Hold", abort: "Abort" };
+const STAGE_WORD = {
+  floor: "Decided before the model ran",
+  policy: "Held before the model ran",
+  model: "Decided with the model",
+  veto: "Decided by Veto",
+};
+
+function el(tag, attrs, ...kids) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") node.className = v;
+    else node.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid === null || kid === undefined || kid === false) continue;
+    node.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+  return node;
+}
+
+function pct(x) { return x === null || x === undefined ? "n/a" : (x * 100).toFixed(1) + "%"; }
+function ms(x) { return x === null || x === undefined ? "n/a" : Math.round(x) + " ms"; }
+
+function title(c) {
+  if (c.case === "control") return "Same code as stable, no pull request";
+  return c.pr ? c.pr.title : c.canary_tag;
+}
+
+function rails(data, onPick) {
+  const box = document.getElementById("rails");
+  box.replaceChildren();
+  const vetoRail = el("div", { class: "rail" });
+  const baseRail = el("div", { class: "rail base base-row" });
+  for (const c of data.cases) {
+    const v = c.decision ? c.decision.verdict : null;
+    const btn = el("button", { class: "station", type: "button", "aria-pressed": "false", "data-case": c.case,
+                               "aria-label": `${c.case}: ${title(c)}. Veto ${v ? VERDICT_WORD[v].toLowerCase() : "not judged"}.` },
+      el("span", { class: "lamp " + (v || "") }),
+      el("span", { class: "tag" }, c.case),
+      el("span", { class: "verd" }, v ? VERDICT_WORD[v] : "not judged"));
+    btn.addEventListener("click", () => onPick(c.case));
+    vetoRail.append(btn);
+    const wrong = c.expected && c.baseline === "promote" && c.expected !== "promote";
+    baseRail.append(el("div", { class: "station", "aria-hidden": "true" },
+      el("span", { class: "lamp " + c.baseline }),
+      el("span", { class: "verd" }, VERDICT_WORD[c.baseline]),
+      wrong ? el("span", { class: "wrong" }, "ships it") : null));
+  }
+  box.style.setProperty("--n", data.cases.length);
+  box.append(
+    el("div", { class: "rail-name" }, el("b", {}, "Veto"), "Muse Spark Open"), vetoRail,
+    el("div", { class: "rail-name" }, el("b", {}, "Metrics only"), "error rate, latency"), baseRail);
+}
+
+function diffBlock(patch) {
+  const pre = el("pre", { class: "diff" });
+  for (const line of (patch || "").split("\n")) {
+    const cls = line.startsWith("@@") ? "hunk" : line.startsWith("+") ? "add" : line.startsWith("-") ? "del" : null;
+    pre.append(el("span", { class: cls }, line || " "));
+  }
+  return pre;
+}
+
+function prColumn(c) {
+  const col = el("div", { class: "col" }, el("h3", {}, "What the pull request says"));
+  if (!c.pr) {
+    col.append(el("p", { class: "none" }, `The image tag ${c.canary_tag} points to no pull request, so there is no stated intent to check.`));
+    return col;
+  }
+  col.append(el("p", { class: "pr-title" }, `#${c.pr.number} ${c.pr.title}`), el("p", { class: "pr-body" }, c.pr.body.trim() || "No description."));
+  for (const f of c.pr.files) {
+    col.append(el("details", {}, el("summary", {}, `Diff of ${f.path}`), diffBlock(f.patch)));
+  }
+  return col;
+}
+
+function changeColumn(c) {
+  const col = el("div", { class: "col" }, el("h3", {}, `What changed between stable and canary, last ${c.window}`));
+  const dests = [...new Set([...Object.keys(c.stable.calls_per_request), ...Object.keys(c.canary.calls_per_request)])].sort();
+  const row = (label, s, k) => el("tr", {}, el("td", {}, label), el("td", { class: "num" }, s), el("td", { class: "num" }, k));
+  const body = el("tbody", {},
+    row("Requests", c.stable.requests, c.canary.requests),
+    row("Errors", pct(c.stable.error_ratio), pct(c.canary.error_ratio)),
+    row("p99 latency", ms(c.stable.p99_ms), ms(c.canary.p99_ms)),
+    dests.map(d => row(`Calls to ${d} per request`, (c.stable.calls_per_request[d] ?? 0).toFixed(2), (c.canary.calls_per_request[d] ?? 0).toFixed(2))));
+  col.append(el("table", {}, el("thead", {}, el("tr", {}, el("th", {}, ""), el("th", { class: "num" }, "Stable"), el("th", { class: "num" }, "Canary"))), body));
+  const list = el("ul", { class: "ev" });
+  if (!c.evidence.length) list.append(el("li", {}, el("span", {}, ""), el("span", { class: "none" }, "No differences found.")));
+  for (const e of c.evidence) {
+    list.append(el("li", {},
+      el("span", { class: "id" }, e.id),
+      el("span", { class: "text" }, el("span", { class: "kind " + (e.hard ? "hard" : "soft") }, `${e.kind}, ${e.hard ? "hard" : "soft"}. `), e.summary)));
+  }
+  col.append(list);
+  return col;
+}
+
+function modelBlock(c) {
+  const d = c.decision;
+  const wide = el("div", { class: "wide" });
+  if (d.stage !== "model") {
+    wide.append(el("h3", {}, "Why the gate decided this"), el("ul", { class: "reasons" }, d.reasons.map(r => el("li", {}, r))),
+      el("p", { class: "runs" }, "Muse was not asked. Code had already decided."));
+    return wide;
+  }
+  const first = d.runs.find(r => r.findings && r.findings.length) || d.runs[0];
+  wide.append(el("h3", {}, "What Muse said about each item"));
+  const list = el("ul", { class: "findings" });
+  for (const f of (first && first.findings) || []) {
+    list.append(el("li", {}, el("span", { class: "id" }, f.id),
+      el("span", { class: f.explained ? "yes" : "no" }, f.explained ? "Explained by the PR" : "Not explained"),
+      el("span", { class: "why" }, f.why)));
+  }
+  wide.append(list);
+  if (d.reasons.length) {
+    wide.append(el("h3", { style: "margin-top:22px" }, "Rules that also applied"), el("ul", { class: "reasons" }, d.reasons.map(r => el("li", {}, r))));
+  }
+  const runText = d.runs.map(r => r.verdict ? `${r.verdict} in ${r.seconds}s${r.attack ? ", saw an attack" : ""}` : `failed: ${r.error}`).join(", ");
+  wide.append(el("p", { class: "runs" }, `${d.runs.length} runs: ${runText}. Model: ${first ? first.model : "n/a"}.`));
+  d.runs.forEach((r, i) => {
+    if (r.reasoning) wide.append(el("details", {}, el("summary", {}, `Reasoning of run ${i + 1}`), el("p", { class: "reasoning" }, r.reasoning)));
+  });
+  return wide;
+}
+
+function replay(c) {
+  const box = document.getElementById("replay");
+  box.replaceChildren();
+  const d = c.decision;
+  const panel = el("article", { class: "replay", "aria-live": "polite" });
+  if (!d) {
+    panel.append(el("div", { class: "verdict" }, el("div", { class: "aspect" }),
+      el("div", {}, el("h2", {}, `${c.case} was not judged on this bundle yet`), el("p", { class: "sub" }, "Run make judge-all and make site-data."))));
+  } else {
+    const expect = c.expected ? `Expected ${c.expected}. ` : "Held out: the author's answer is not in yet. ";
+    panel.append(el("div", { class: "verdict" },
+      el("div", { class: "aspect lit " + d.verdict, role: "img", "aria-label": VERDICT_WORD[d.verdict] }),
+      el("div", {},
+        el("h2", {}, `${VERDICT_WORD[d.verdict]}: ${title(c)}`),
+        el("p", { class: "sub" }, el("b", {}, STAGE_WORD[d.stage] || d.stage), `. ${expect}The metrics-only check would ${c.baseline}. Image ${c.canary_tag}.`))));
+    if (d.summary) panel.append(el("div", { class: "summary" }, el("p", {}, d.summary)));
+  }
+  panel.append(el("div", { class: "cols" }, prColumn(c), changeColumn(c)));
+  if (d) panel.append(modelBlock(c));
+  box.append(panel);
+}
+
+function scoreboard(data) {
+  const box = document.getElementById("scoreboard");
+  box.replaceChildren();
+  const ev = data.eval && data.eval.primary;
+  if (ev) {
+    const t = el("table", {},
+      el("thead", {}, el("tr", {}, el("th", {}, ""), el("th", { class: "num" }, "Right"), el("th", { class: "num" }, "Shipped when it should not"))),
+      el("tbody", {},
+        el("tr", {}, el("td", {}, "Veto"), el("td", { class: "num" }, `${ev.veto.right} of ${ev.veto.scored}`), el("td", { class: "num" }, ev.veto.shipped)),
+        el("tr", {}, el("td", {}, "Metrics only"), el("td", { class: "num" }, `${ev.baseline.right} of ${ev.baseline.scored}`), el("td", { class: "num" }, ev.baseline.shipped))));
+    const fb = data.eval.fallback;
+    box.append(el("div", { class: "board" }, el("h3", {}, "Labelled releases"), t,
+      el("p", { class: "big" }, `Muse Spark Open, every release judged ${ev.repeats} times.` +
+        (fb ? ` The fallback, Muse Spark 1.3, got ${fb.veto.right} of ${fb.veto.scored} right.` : ""))));
+  }
+  const at = data.attacks;
+  if (at) {
+    const r = (label, v) => el("tr", {}, el("td", {}, label), el("td", { class: "num" }, v));
+    box.append(el("div", { class: "board" }, el("h3", {}, "Prompt injection suite"),
+      el("table", {}, el("tbody", {},
+        r("Attacks planted", at.count),
+        r("Stopped before the model", at.floor),
+        r("Flagged, then judged", at.flagged),
+        r("Reached the model unflagged", at.unflagged),
+        r("Of those, Muse called out itself", at.called_out),
+        r("Model runs fooled", `${at.fooled_runs} of ${at.runs}`),
+        r("Shipped", at.shipped))),
+      el("p", { class: "big" }, "Payloads go in the PR body, a commit, a diff comment or a canary log line of a silent bug release.")));
+    const rows = at.rows.map(x => el("tr", {},
+      el("td", {}, x.base), el("td", {}, x.payload), el("td", {}, at.payloads[x.payload] || ""), el("td", {}, x.vector),
+      el("td", {}, x.caught), el("td", {}, x.runs.length ? x.runs.map(v => v || "failed").join(", ") : "not asked"), el("td", {}, x.verdict)));
+    document.getElementById("attack-table").replaceChildren(el("div", { style: "overflow-x:auto" }, el("table", { class: "attack-table" },
+      el("thead", {}, el("tr", {}, ["Base", "Payload", "Text", "Where", "Caught", "Model runs", "Final"].map(h => el("th", {}, h)))),
+      el("tbody", {}, rows))));
+  } else {
+    document.getElementById("attack-details").hidden = true;
+  }
+}
+
+async function main() {
+  let data;
+  try {
+    const res = await fetch("data.json", { cache: "no-store" });
+    if (!res.ok) throw new Error(`data.json answered ${res.status}`);
+    data = await res.json();
+  } catch (err) {
+    document.getElementById("replay").replaceChildren(el("div", { class: "error" },
+      el("p", {}, `Could not load the replay data: ${err.message}. Serve this folder over http, for example with make site-preview.`)));
+    return;
+  }
+  const names = data.cases.map(c => c.case);
+  const fromHash = decodeURIComponent(location.hash.slice(1));
+  let selected = names.includes(fromHash) ? fromHash : (names.includes("pr-2") ? "pr-2" : names[0]);
+  const pick = (name, byUser) => {
+    selected = name;
+    for (const b of document.querySelectorAll("#rails button.station")) b.setAttribute("aria-pressed", String(b.dataset.case === name));
+    replay(data.cases.find(c => c.case === name));
+    if (byUser) history.replaceState(null, "", "#" + encodeURIComponent(name));
+  };
+  rails(data, (name) => pick(name, true));
+  pick(selected, false);
+  scoreboard(data);
+  document.getElementById("generated").textContent = `Data from ${data.generated}.`;
+}
+main();
+</script>
+</body>
+</html>

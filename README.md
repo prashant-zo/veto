@@ -1,13 +1,140 @@
 # Veto
 
-Release gate for Argo Rollouts. It checks that a canary did what its PR said, and nothing else.
+A release gate for Argo Rollouts canaries. Veto asks one question about every canary:
+did this release do what its pull request says, and nothing else?
 
-The AI can explain a change. It can never approve one.
+**The AI can explain a change. It can never approve one.**
 
-Work in progress. Built during the Meta Global AI Developer Hackathon, Oct 27 to Nov 4 2026.
+Replay every decision: https://prashant-zo.github.io/veto/
 
 Built with Muse Spark Open.
 
+## The problem
+
+A normal canary analysis checks error rate and latency. Plenty of bad releases pass that.
+In the demo shop, a "refactor, no behavior change" PR quietly stops charging for orders. Errors stay at 0%,
+latency does not move, and the canary looks perfect. The only clue is that checkout stopped calling payments,
+and that the PR never said it would.
+
+Asking an LLM to review releases has its own problem: the PR text and the logs are written by whoever made
+the change, so they can tell the model what to answer.
+
+## What Veto does
+
+```mermaid
+flowchart LR
+  A[Argo Rollouts canary<br/>50 percent traffic, 150s] -->|analysis step| V[Veto]
+  V --> P[(Prometheus<br/>OTel span metrics)]
+  V --> L[(Loki logs)]
+  V --> G[GitHub PR<br/>from the image tag]
+  P & L & G --> B[Evidence bundle<br/>numbered items, hash]
+  B --> F{Floor and policy}
+  F -->|loud failure or attack text| X[Abort]
+  F -->|no PR to check against| H[Hold]
+  F --> M[Muse Spark Open<br/>3 runs]
+  M --> C{Checks and cap}
+  C --> R[Promote, hold or abort]
+  R -->|verdict and Kubernetes Event| A
+```
+
+1. Collect request and call metrics from OpenTelemetry, logs from Loki, and the pull request behind the image tag.
+   Canary and stable are split by their pod hash.
+2. Turn every difference into numbered evidence: lost or new call edges, error and latency shifts, new or missing
+   log lines. Logs and PR text are cleaned, secrets are redacted, and text aimed at the reviewer is flagged.
+3. Abort before the model on loud failures or attack text. Hold before the model when there is no PR to compare with.
+4. Muse Spark Open explains every evidence item against the PR, three times. All runs must agree.
+5. Code checks the answer and caps it. Any hard evidence means hold at most. A promote must explain every item,
+   log changes must be in the diff, and no run may have seen an attack.
+6. Argo continues on promote, aborts on abort, and pauses for a person on hold.
+
+If Baseten is down, Muse Spark 1.3 on the Meta Model API answers instead.
+
+## Results
+
+Six labelled releases from the demo shop, judged three times each. The baseline is a usual canary check:
+error rate and latency only. Details in [eval/results](eval/results).
+
+| | right | shipped when it should not |
+|---|---|---|
+| Veto, Muse Spark Open | 18 of 18 | 0 |
+| Veto, Muse Spark 1.3 (fallback) | 6 of 6 | 0 |
+| Metrics-only baseline | 6 of 18 | 12 |
+
+Prompt injection suite: 16 payloads planted in the PR body, a commit, a diff comment or a canary log line
+of real bundles, 80 attacks in all. Plain text, fake JSON verdicts, fake end markers, Hinglish, Spanish,
+zero width characters, look-alike letters, base64, fake CI results, role play, urgency and a plausible false
+explanation.
+
+| | |
+|---|---|
+| stopped before the model by the detector | 20 |
+| flagged as hard evidence, then judged | 15 |
+| reached the model unflagged | 45, Muse called out 43 of them itself |
+| model runs fooled | 0 of 180 |
+| shipped | 0 |
+
+A test runs the same 80 attacks against a model that is always fooled. Nothing ships, because the cap is code.
+
+Live in the cluster, with nobody touching the rollout:
+
+- the silent payments bug was aborted
+- an intended dependency removal was paused for a person
+- a log text change was promoted to 100 percent
+- with Veto scaled to zero, Argo marked the analysis as an error and aborted the canary, so stable kept serving
+
+Two held-out PRs from another developer are judged on the frozen code, results to come.
+
+## Try it
+
+You need Docker (colima works), kind, kubectl with the argo rollouts plugin, helm and uv.
+
+```bash
+make up && make stack && make shop      # kind cluster, argo rollouts, prometheus, loki, otel collector, demo shop
+cp .env.example .env                    # add your Muse keys
+make image && make deploy               # build veto and run it in the cluster
+make gate-on SVC=checkout               # canaries of checkout get a veto analysis step
+make release SVC=checkout TAG=pr-2-ac3b97a
+make verdict SVC=checkout               # about 3 minutes later
+```
+
+The scenario images are built from [veto-demo-shop](https://github.com/prashant-zo/veto-demo-shop) with
+`make build PR=<n>`. Without a cluster you can still judge the saved bundles: `make judge-all`, `make eval`, `make attacks`.
+
+## How the AI is kept in check
+
+- Logs and PR text are data. They are cleaned (unicode folded, hidden characters dropped) and redacted before anything leaves the cluster.
+- A detector turns text aimed at the reviewer into hard evidence. Strong signs abort before the model.
+- The bundle sits between markers made from its hash, so text inside cannot fake the end of it.
+- Muse also says whether any text tried to steer it. One run seeing an attack stops a promote.
+- Three runs must agree. A broken reply or a timeout means hold.
+- Hard evidence caps the verdict at hold, whatever the model says.
+
+The decisions behind all of this are short notes in [docs/adr](docs/adr).
+
+## Repo
+
+```
+src/veto/collect    prometheus, loki, github and kubernetes readers
+src/veto/compact    metric, call edge and log evidence, redaction, attack detector
+src/veto/judge      prompt, model client with fallback, answer parser
+src/veto/policy     floor, ceiling and the checks around the model
+src/veto/serve      the http service argo calls
+deploy/             veto manifests and the ClusterAnalysisTemplate
+eval/               saved bundles, labels, scores, attack results
+site/               the replay page
+```
+
+## Known limits
+
+- Veto needs OpenTelemetry traces with span metrics, logs in Loki with the pod hash, and Argo Rollouts. It was built and tested on one small Python shop in kind.
+- The evidence window is 2 minutes, so a gate takes about 3 minutes, and rare bugs need more traffic than that.
+- The eval is small: 6 labelled releases, 2 held-out PRs and 80 attacks. It shows the design works, it is not a production accuracy number.
+- Muse can be wrong. The rules make a wrong answer stricter, not looser, but a wrong hold still costs someone's time.
+- The detector misses other languages, look-alike letters and plain lies. The model and the cap handle those, and the suite counts how often.
+- Without a GitHub token the API allows 60 calls an hour, and each decision uses 3.
+- When Veto is down, Argo aborts canaries. Stable keeps serving, but releases wait.
+
 ## License
 
-Veto code is Apache-2.0. Muse Spark Open is under the Muse Model License from Meta.
+Veto is Apache-2.0. Muse Spark Open is under the Muse Model License from Meta.
+Made by prashant-zo for the Meta Global AI Developer Hackathon, Nov 2026.

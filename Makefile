@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve eval attacks
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve eval attacks site-data site-preview
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -127,3 +127,11 @@ eval: ## score veto and a metrics-only baseline on eval/cases: make eval [ONLY=f
 
 attacks: ## plant 80 prompt injections in saved cases, count what gets through: make attacks [ONLY=fallback]
 	uv run --env-file .env veto attacks $(if $(ONLY),--only $(ONLY))
+
+site-data: ## judge every case again and write site/data.json for the replay page
+	$(MAKE) --no-print-directory judge-all
+	uv run veto site
+
+site-preview: ## serve the replay page on localhost:8090
+	@echo "open http://localhost:8090"
+	uv run python -m http.server 8090 -d site

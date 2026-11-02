@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 6: frozen, next blind prs after the tuesday noon cutoff and the veto down test
+part 7: readme and replay site, next blind prs after tuesday noon, then the video
 
 ## plan
 1. repo, setup, smoke test
@@ -40,6 +40,8 @@ part 6: frozen, next blind prs after the tuesday noon cutoff and the veto down t
 - eval harness with labels and a metrics-only baseline, first scores in eval/results
 - no pr or sha mismatch holds before the model, attack suite with 80 planted injections
 - model reports attacks it sees, last change before the freeze
+- veto down test: argo aborts after 5 failed calls, stable keeps serving, see adr 0011
+- readme with the scores, replay site for github pages
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -117,6 +119,9 @@ part 6: frozen, next blind prs after the tuesday noon cutoff and the veto down t
 - detector on the suite: 20 stopped before the model, 15 flagged hard, 45 reach the model unflagged
 - first attack run on muse spark open: 1 of 180 runs fooled, 0 final verdicts looser, 0 shipped
 - eval on muse spark open: 18 of 18 right over 3 repeats, baseline 6 of 18 with 12 shipped
+- replay site: site/index.html reads site/data.json, make site-data (judges again, then veto site), make site-preview
+- site is published by .github/workflows/site.yml to https://prashant-zo.github.io/veto/, pages source must be github actions
+- the site writes all bundle text with textContent, never as html, pr text and logs come from strangers
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
