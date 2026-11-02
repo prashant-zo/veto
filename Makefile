@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve eval attacks site-data site-preview rescore manifests
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve eval attacks site-data site-preview ui rescore manifests
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -144,8 +144,14 @@ site-data: ## judge every case again and write site/data.json for the replay pag
 	uv run veto site
 
 site-preview: ## serve the replay page on localhost:8090
+	@mkdir -p .local/site
+	@cp src/veto/serve/static/index.html src/veto/serve/static/icon.svg site/data.json .local/site/
 	@echo "open http://localhost:8090"
-	uv run python -m http.server 8090 -d site
+	uv run python -m http.server 8090 -d .local/site
+
+ui: ## open the veto ui of the cluster on localhost:8080
+	@echo "open http://localhost:8080"
+	kubectl --context kind-veto -n veto port-forward svc/veto 8080:8080
 
 rescore: ## score saved results again with the current labels, no model calls
 	uv run veto eval --rescore eval/results/muse-spark-open-1026.json

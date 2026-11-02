@@ -19,6 +19,7 @@ class Settings:
     fallback_name: str | None = None
     fallback_api_key: str | None = None
     model_timeout: float = 60.0
+    ui: bool = True
 
 
 def load() -> Settings:
@@ -36,4 +37,5 @@ def load() -> Settings:
         fallback_name=os.environ.get("VETO_FALLBACK_NAME") or None,
         fallback_api_key=os.environ.get("VETO_FALLBACK_API_KEY") or None,
         model_timeout=float(os.environ.get("VETO_MODEL_TIMEOUT", "60")),
+        ui=os.environ.get("VETO_UI", "true").strip().lower() not in ("false", "0", "off", "no"),
     )

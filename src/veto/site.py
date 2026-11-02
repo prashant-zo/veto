@@ -1,5 +1,7 @@
 """Build site/data.json for the replay page from what is already in the repo.
 
+The page itself is src/veto/serve/static/index.html, the same one Veto serves live.
+
 Inputs: saved bundles (eval/cases), labels, the decisions make judge-all wrote
 (eval/runs), eval scores and attack results (eval/results). No model calls here.
 """
@@ -10,43 +12,23 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .attacks import PAYLOADS, AttackRow
-from .evaluate import Row, baseline, score
+from .evaluate import Row, score
 from .judge.parse import VERDICTS
-
-MAX_REASONING = 1200
+from .view import case_view, decision_view
 
 
 def _decision(path: Path) -> dict | None:
     if not path.exists():
         return None
-    d = json.loads(path.read_text())
-    runs = [{"model": r["model"], "seconds": r["seconds"], "verdict": r["verdict"], "attack": r.get("attack", False),
-             "error": r["error"], "findings": r["findings"], "summary": r["summary"],
-             "reasoning": (r.get("reasoning") or "")[:MAX_REASONING]} for r in d["runs"]]
-    return {"verdict": d["verdict"], "stage": d["stage"], "ceiling": d["ceiling"], "reasons": d["reasons"],
-            "summary": d["summary"], "bundle_hash": d["bundle_hash"], "runs": runs}
+    return decision_view(json.loads(path.read_text()))
 
 
 def _case(path: Path, labels: dict, runs_dir: Path) -> dict:
     b = json.loads(path.read_text())
-    label = labels.get(path.stem, {})
-    intent = b.get("intent")
-    pr = None
-    if intent:
-        pr = {"number": intent["pr"], "title": intent["title"], "body": intent["body"], "commits": intent["commits"],
-              "files": [{"path": f["path"], "status": f["status"], "patch": f["patch"]} for f in intent["files"]]}
     decision = _decision(runs_dir / path.name)
     if decision and decision["bundle_hash"] != b["hash"]:
         decision = None     # judged on another bundle, do not mix them
-    return {
-        "case": path.stem, "expected": label.get("expected"), "why": label.get("why", ""),
-        "baseline": baseline(b), "canary_tag": b["rollout"]["canary_tag"], "service": b["rollout"]["service"],
-        "window": b["rollout"]["window"], "created_at": b["created_at"], "bundle_hash": b["hash"],
-        "stable": b["stable"], "canary": b["canary"], "traffic": b["traffic"], "pr": pr,
-        "evidence": [{"id": e["id"], "kind": e["kind"], "hard": e["hard"], "summary": e["summary"]}
-                     for e in b["evidence"]],
-        "decision": decision,
-    }
+    return case_view(path.stem, b, decision, labels.get(path.stem))
 
 
 def _scores(path: Path) -> dict | None:

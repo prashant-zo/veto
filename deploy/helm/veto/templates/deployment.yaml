@@ -42,6 +42,8 @@ spec:
               value: {{ .Values.model.name | quote }}
             - name: VETO_MODEL_TIMEOUT
               value: {{ .Values.model.timeoutSeconds | quote }}
+            - name: VETO_UI
+              value: {{ .Values.ui.enabled | quote }}
             {{- if .Values.model.fallback.baseUrl }}
             - name: VETO_FALLBACK_BASE_URL
               value: {{ .Values.model.fallback.baseUrl | quote }}

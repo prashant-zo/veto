@@ -117,6 +117,19 @@ helm install veto oci://ghcr.io/prashant-zo/charts/veto --version 0.1.0 -n veto 
 
 Every other way to install, and how to gate a rollout, is in [docs/install.md](docs/install.md).
 
+## See the decisions
+
+Veto serves its own page with every decision since it started: the pull request, what changed between stable
+and canary, what Muse said about each item, and the verdict.
+
+```bash
+kubectl -n veto port-forward svc/veto 8080:8080      # then open http://localhost:8080
+```
+
+It is the same page as the [replay site](https://prashant-zo.github.io/veto/), fed live from your cluster.
+The last 50 decisions stay in memory, so a restart clears them. The page shows PR diffs and log lines and has no
+login, so keep it off public ingresses, or turn it off with `--set ui.enabled=false`.
+
 ## Try the demo
 
 You need Docker (colima works), kind, kubectl with the argo rollouts plugin, helm and uv.
@@ -151,12 +164,12 @@ src/veto/collect    prometheus, loki, github and kubernetes readers
 src/veto/compact    metric, call edge and log evidence, redaction, attack detector
 src/veto/judge      prompt, model client with fallback, answer parser
 src/veto/policy     floor, ceiling and the checks around the model
-src/veto/serve      the http service argo calls
+src/veto/serve      the http service argo calls, and the veto ui page in static/
 deploy/helm/veto    the helm chart, the one install source
 deploy/install.yaml rendered from the chart for kubectl apply and kustomize
 examples/           argo cd, flux, terraform and a kustomize overlay
 eval/               saved bundles, labels, scores, attack results
-site/               the replay page
+site/               data for the replay page on github pages
 ```
 
 ## Known limits

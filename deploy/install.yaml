@@ -127,6 +127,8 @@ spec:
               value: "meta-models/muse-spark-open-1026"
             - name: VETO_MODEL_TIMEOUT
               value: "60"
+            - name: VETO_UI
+              value: "true"
             - name: VETO_MODEL_API_KEY
               valueFrom:
                 secretKeyRef:

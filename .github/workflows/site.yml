@@ -1,10 +1,10 @@
-# publishes site/ (the replay page and its data.json) to github pages
+# publishes the replay page (the veto ui page from src/veto/serve/static) with site/data.json to github pages
 name: site
 
 on:
   push:
     branches: [main]
-    paths: ["site/**", ".github/workflows/site.yml"]
+    paths: ["site/**", "src/veto/serve/static/**", ".github/workflows/site.yml"]
   workflow_dispatch:
 
 permissions:
@@ -25,8 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: page and data in one folder
+        run: |
+          mkdir -p _site
+          cp src/veto/serve/static/index.html src/veto/serve/static/icon.svg site/data.json _site/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
       - id: deploy
         uses: actions/deploy-pages@v4

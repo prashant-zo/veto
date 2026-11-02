@@ -78,7 +78,20 @@ strategy:
               value: checkout
 ```
 
-Decisions show up as Events on the Rollout and in `kubectl -n veto logs deploy/veto`.
+Decisions show up as Events on the Rollout, in `kubectl -n veto logs deploy/veto`, and in the Veto UI.
+
+## 4. the veto ui
+
+```bash
+kubectl -n veto port-forward svc/veto 8080:8080
+```
+
+Open http://localhost:8080. Every decision since Veto started, newest on the right: the pull request, what changed
+between stable and canary, what the model said about each item, and the verdict. The page looks for new decisions
+every 15 seconds. The last 50 are kept in memory, a restart clears them.
+
+The page shows pull request diffs and log lines from your cluster and has no login. Reach it with port-forward and
+keep it off public ingresses. `--set ui.enabled=false` turns it off. The verdict Argo reads never carries the bundle.
 
 ## upgrades
 

@@ -1,7 +1,7 @@
 # state
 
 ## now
-path 1 open source and the video, tracked in docs/roadmap.md, now the one chart install, then the video
+path 1 open source and the video, tracked in docs/roadmap.md, veto ui done, next the video
 
 ## plan
 1. repo, setup, smoke test
@@ -46,6 +46,9 @@ path 1 open source and the video, tracked in docs/roadmap.md, now the one chart 
 - blind prs from blind-a: pr 6 promote (right), pr 7 hold on frozen code (should be abort, not shipped), answers from the author
 - roadmap for path 1 and the video in docs/roadmap.md
 - post-blind fixes: pr 7 captured again and aborted 3 of 3, eval 24 of 24, attacks 0 shipped (3 of 180 runs fooled on one attack, capped at hold)
+- one chart install for helm, kubectl, kustomize, argo cd, flux and terraform, see adr 0013
+- v0.1.0 released: image and chart on ghcr.io, both public
+- veto ui: veto serves the replay page with its own live decisions, see adr 0014
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -123,7 +126,9 @@ path 1 open source and the video, tracked in docs/roadmap.md, now the one chart 
 - detector on the suite: 20 stopped before the model, 15 flagged hard, 45 reach the model unflagged
 - first attack run on muse spark open: 1 of 180 runs fooled, 0 final verdicts looser, 0 shipped
 - eval on muse spark open: 18 of 18 right over 3 repeats, baseline 6 of 18 with 12 shipped
-- replay site: site/index.html reads site/data.json, make site-data (judges again, then veto site), make site-preview
+- replay site: the page is src/veto/serve/static/index.html, its data site/data.json, make site-data (judges again, then veto site), make site-preview
+- veto ui: GET / on the veto service, data from GET /data.json (mode live), last 50 decisions in memory, make ui opens it on localhost:8080
+- ui.enabled in the chart (env VETO_UI), on by default, the bundle never goes into /v1/verdict, /v1/decisions or events
 - site is published by .github/workflows/site.yml to https://prashant-zo.github.io/veto/, pages source must be github actions
 - the site writes all bundle text with textContent, never as html, pr text and logs come from strangers
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234

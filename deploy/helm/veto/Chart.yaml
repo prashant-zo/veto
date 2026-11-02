@@ -5,6 +5,7 @@ type: application
 version: 0.1.0
 appVersion: "0.1.0"
 home: https://github.com/prashant-zo/veto
+icon: https://prashant-zo.github.io/veto/icon.svg
 sources:
   - https://github.com/prashant-zo/veto
 keywords:

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Veto replay</title>
 <meta name="description" content="Replay how Veto judged each canary release: the evidence, what Muse Spark Open said, and what the gate decided.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -191,21 +192,21 @@
     <a class="mark" href="#">Veto</a>
     <nav class="links" aria-label="Page">
       <a href="#how">How it decides</a>
-      <a href="#scores">Scores</a>
+      <a href="#scores" id="scores-link">Scores</a>
       <a href="https://github.com/prashant-zo/veto">Source on GitHub</a>
     </nav>
   </header>
 
   <section class="hero">
     <h1>Did this release do what its pull request says, and nothing else?</h1>
-    <p>Veto is a gate for Argo Rollouts canaries. It compares the canary with stable, reads the pull request, and asks Muse Spark Open to explain every difference. <strong>The AI can explain a change. It can never approve one.</strong></p>
+    <p id="hero-text">Veto is a gate for Argo Rollouts canaries. It compares the canary with stable, reads the pull request, and asks Muse Spark Open to explain every difference. <strong>The AI can explain a change. It can never approve one.</strong></p>
   </section>
 
-  <div class="track" aria-label="Releases">
-    <div class="track-scroll">
+  <div class="track" id="track" aria-label="Releases">
+    <div class="track-scroll" id="track-scroll">
       <div class="rails" id="rails"></div>
     </div>
-    <p class="track-note">Each stop is a real canary from the demo shop. The top line is Veto. The dashed line is a usual canary check that only looks at error rate and latency. Pick a release to replay it.</p>
+    <p class="track-note" id="track-note">Each stop is a real canary from the demo shop. The top line is Veto. The dashed line is a usual canary check that only looks at error rate and latency. Pick a release to replay it.</p>
   </div>
 
   <div id="replay"></div>
@@ -251,6 +252,9 @@ const STAGE_WORD = {
   model: "Decided with the model",
   veto: "Decided by Veto",
 };
+// replay: the saved releases on github pages. live: served by veto itself, its own decisions
+let MODE = "replay";
+const POLL_MS = 15000;
 
 function el(tag, attrs, ...kids) {
   const node = document.createElement(tag);
@@ -264,6 +268,11 @@ function el(tag, attrs, ...kids) {
     node.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
   }
   return node;
+}
+
+function when(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
 }
 
 function pct(x) { return x === null || x === undefined ? "n/a" : (x * 100).toFixed(1) + "%"; }
@@ -281,17 +290,20 @@ function rails(data, onPick) {
   const baseRail = el("div", { class: "rail base base-row" });
   for (const c of data.cases) {
     const v = c.decision ? c.decision.verdict : null;
+    const name = c.label || c.case;
+    const where = c.rollout ? ` Rollout ${c.namespace}/${c.rollout}, ${when(c.decided_at)}.` : "";
     const btn = el("button", { class: "station", type: "button", "aria-pressed": "false", "data-case": c.case,
-                               "aria-label": `${c.case}: ${title(c)}. Veto ${v ? VERDICT_WORD[v].toLowerCase() : "not judged"}.` },
+                               title: c.rollout ? `${c.namespace}/${c.rollout}, ${when(c.decided_at)}` : null,
+                               "aria-label": `${name}: ${title(c)}. Veto ${v ? VERDICT_WORD[v].toLowerCase() : "not judged"}.${where}` },
       el("span", { class: "lamp " + (v || "") }),
-      el("span", { class: "tag" }, c.case),
+      el("span", { class: "tag" }, name),
       el("span", { class: "verd" }, v ? VERDICT_WORD[v] : "not judged"));
     btn.addEventListener("click", () => onPick(c.case));
     vetoRail.append(btn);
     const wrong = c.expected && c.baseline === "promote" && c.expected !== "promote";
     baseRail.append(el("div", { class: "station", "aria-hidden": "true" },
-      el("span", { class: "lamp " + c.baseline }),
-      el("span", { class: "verd" }, VERDICT_WORD[c.baseline]),
+      el("span", { class: "lamp " + (c.baseline || "") }),
+      el("span", { class: "verd" }, c.baseline ? VERDICT_WORD[c.baseline] : "n/a"),
       wrong ? el("span", { class: "wrong" }, "ships it") : null));
   }
   box.style.setProperty("--n", data.cases.length);
@@ -348,7 +360,7 @@ function modelBlock(c) {
   const wide = el("div", { class: "wide" });
   if (d.stage !== "model") {
     wide.append(el("h3", {}, "Why the gate decided this"), el("ul", { class: "reasons" }, d.reasons.map(r => el("li", {}, r))),
-      el("p", { class: "runs" }, "Muse was not asked. Code had already decided."));
+      el("p", { class: "runs" }, d.stage === "veto" ? "Veto did not get as far as the model, so it answered hold." : "Muse was not asked. Code had already decided."));
     return wide;
   }
   const first = d.runs.find(r => r.findings && r.findings.length) || d.runs[0];
@@ -380,15 +392,17 @@ function replay(c) {
     panel.append(el("div", { class: "verdict" }, el("div", { class: "aspect" }),
       el("div", {}, el("h2", {}, `${c.case} was not judged on this bundle yet`), el("p", { class: "sub" }, "Run make judge-all and make site-data."))));
   } else {
-    const expect = c.expected ? `Expected ${c.expected}. ` : "Held out: the author's answer is not in yet. ";
+    const expect = c.expected ? `Expected ${c.expected}. `
+      : MODE === "live" ? `Rollout ${c.namespace}/${c.rollout}, ${when(c.decided_at)}. ` : "Held out: the author's answer is not in yet. ";
+    const base = c.baseline ? `The metrics-only check would ${c.baseline}. ` : "";
     panel.append(el("div", { class: "verdict" },
-      el("div", { class: "aspect lit " + d.verdict, role: "img", "aria-label": VERDICT_WORD[d.verdict] }),
+      el("div", { class: "aspect lit " + d.verdict, role: "img", "aria-label": VERDICT_WORD[d.verdict] || d.verdict }),
       el("div", {},
-        el("h2", {}, `${VERDICT_WORD[d.verdict]}: ${title(c)}`),
-        el("p", { class: "sub" }, el("b", {}, STAGE_WORD[d.stage] || d.stage), `. ${expect}The metrics-only check would ${c.baseline}. Image ${c.canary_tag}.`))));
+        el("h2", {}, `${VERDICT_WORD[d.verdict] || d.verdict}: ${title(c) || "no canary tag"}`),
+        el("p", { class: "sub" }, el("b", {}, STAGE_WORD[d.stage] || d.stage), `. ${expect}${base}Image ${c.canary_tag || "unknown"}.`))));
     if (d.summary) panel.append(el("div", { class: "summary" }, el("p", {}, d.summary)));
   }
-  panel.append(el("div", { class: "cols" }, prColumn(c), changeColumn(c)));
+  if (c.stable) panel.append(el("div", { class: "cols" }, prColumn(c), changeColumn(c)));
   if (d) panel.append(modelBlock(c));
   box.append(panel);
 }
@@ -432,30 +446,94 @@ function scoreboard(data) {
   }
 }
 
+async function load() {
+  const res = await fetch("data.json", { cache: "no-store" });
+  if (!res.ok) throw new Error(`data.json answered ${res.status}`);
+  return res.json();
+}
+
+// live mode: the same page, worded for one cluster's own decisions
+function liveText(data) {
+  document.title = "Veto decisions";
+  document.getElementById("hero-text").replaceChildren(
+    `Every canary Veto judged in this cluster since it started, newest on the right. Veto keeps the last ${data.keep || 50} in memory, so a restart clears them. `,
+    el("strong", {}, "The AI can explain a change. It can never approve one."));
+  document.getElementById("track-note").textContent = "The top line is Veto. The dashed line is what a usual canary check on error rate and latency would have said. Pick a release to see why.";
+  document.getElementById("scores").hidden = true;
+  document.getElementById("scores-link").hidden = true;
+}
+
+function noDecisions() {
+  document.getElementById("track").hidden = true;
+  document.getElementById("replay").replaceChildren(el("article", { class: "replay" },
+    el("div", { class: "verdict" }, el("div", { class: "aspect" }),
+      el("div", {}, el("h2", {}, "No decisions yet"),
+        el("p", { class: "sub" }, "A release shows up here once Argo asks Veto about a canary. This page checks again every 15 seconds.")))));
+}
+
+let shown = null;
+let selected = null;
+
+function pick(name, byUser) {
+  selected = name;
+  for (const b of document.querySelectorAll("#rails button.station")) b.setAttribute("aria-pressed", String(b.dataset.case === name));
+  replay(shown.cases.find(c => c.case === name));
+  if (byUser) history.replaceState(null, "", "#" + encodeURIComponent(name));
+}
+
+function show(data) {
+  const names = data.cases.map(c => c.case);
+  const newest = names[names.length - 1];
+  const onNewest = !shown || !selected || selected === shown.cases.map(c => c.case).at(-1);
+  shown = data;
+  if (!names.length) { noDecisions(); return; }
+  document.getElementById("track").hidden = false;
+  rails(data, (name) => pick(name, true));
+  let want = selected;
+  if (!want) {
+    const fromHash = decodeURIComponent(location.hash.slice(1));
+    want = names.includes(fromHash) ? fromHash : MODE === "live" ? newest : (names.includes("pr-2") ? "pr-2" : names[0]);
+  } else if (!names.includes(want) || (MODE === "live" && onNewest)) {
+    want = newest;
+  }
+  pick(want, false);
+  if (MODE === "live" && want === newest) {
+    const s = document.getElementById("track-scroll");
+    s.scrollLeft = s.scrollWidth;
+  }
+}
+
+function stamp(data) {
+  document.getElementById("generated").textContent = MODE === "live"
+    ? `Live from this cluster, checked ${when(data.generated)}.` : `Data from ${data.generated}.`;
+}
+
 async function main() {
   let data;
   try {
-    const res = await fetch("data.json", { cache: "no-store" });
-    if (!res.ok) throw new Error(`data.json answered ${res.status}`);
-    data = await res.json();
+    data = await load();
   } catch (err) {
     document.getElementById("replay").replaceChildren(el("div", { class: "error" },
       el("p", {}, `Could not load the replay data: ${err.message}. Serve this folder over http, for example with make site-preview.`)));
     return;
   }
-  const names = data.cases.map(c => c.case);
-  const fromHash = decodeURIComponent(location.hash.slice(1));
-  let selected = names.includes(fromHash) ? fromHash : (names.includes("pr-2") ? "pr-2" : names[0]);
-  const pick = (name, byUser) => {
-    selected = name;
-    for (const b of document.querySelectorAll("#rails button.station")) b.setAttribute("aria-pressed", String(b.dataset.case === name));
-    replay(data.cases.find(c => c.case === name));
-    if (byUser) history.replaceState(null, "", "#" + encodeURIComponent(name));
-  };
-  rails(data, (name) => pick(name, true));
-  pick(selected, false);
-  scoreboard(data);
-  document.getElementById("generated").textContent = `Data from ${data.generated}.`;
+  MODE = data.mode === "live" ? "live" : "replay";
+  if (MODE === "live") liveText(data);
+  show(data);
+  if (MODE === "replay") scoreboard(data);
+  stamp(data);
+  if (MODE !== "live") return;
+  // a new decision redraws the track, otherwise only the time changes, so open details stay open
+  const ids = (d) => d.cases.map(c => c.case).join(" ");
+  setInterval(async () => {
+    try {
+      const next = await load();
+      if (ids(next) !== ids(shown)) show(next);
+      stamp(next);
+    } catch (err) {
+      document.getElementById("generated").textContent = `Veto did not answer at ${new Date().toLocaleTimeString()}, trying again.`;
+    }
+  }, POLL_MS);
 }
 main();
 </script>

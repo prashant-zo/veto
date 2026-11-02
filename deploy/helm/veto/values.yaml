@@ -47,6 +47,11 @@ rbac:
 service:
   port: 8080
 
+# the veto ui on the service port: every decision since veto started, open it with kubectl port-forward.
+# It shows pull request diffs and log lines from your cluster, keep it off public ingresses.
+ui:
+  enabled: true
+
 resources:
   requests:
     cpu: 50m

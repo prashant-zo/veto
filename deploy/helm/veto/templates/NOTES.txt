@@ -13,3 +13,11 @@ Gate a rollout: add this step after the canary has had a couple of minutes of tr
           value: <your rollout's name>
 
 Decisions: kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "veto.fullname" . }}
+{{- if .Values.ui.enabled }}
+
+See every decision in the Veto UI:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "veto.fullname" . }} 8080:{{ .Values.service.port }}
+
+then open http://localhost:8080
+{{- end }}

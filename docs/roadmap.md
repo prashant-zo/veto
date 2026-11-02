@@ -26,7 +26,7 @@ Hard deadline: Wed Nov 4, 9 PM ET (Thu Nov 5, 7:30 AM IST). Marks: [ ] todo, [~]
 5. [ ] second demo app in another language, so the evidence code is not only tested on python
 6. [ ] model endpoint docs and self hosted muse weights, after judging ends
 7. [ ] veto verdict shown as a check on the pull request, after the hackathon
-8. [ ] veto ui: the replay page served by veto itself with its live decisions, opened with kubectl port-forward
+8. [x] veto ui: the replay page served by veto itself with its live decisions, opened with kubectl port-forward
 
 ## after
 - github action and github app packaging, looking at how pr-agent does it
