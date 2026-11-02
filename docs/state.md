@@ -1,7 +1,7 @@
 # state
 
 ## now
-path 1 open source and the video, tracked in docs/roadmap.md, next post-blind fixes then the helm chart
+path 1 open source and the video, tracked in docs/roadmap.md, now the one chart install, then the video
 
 ## plan
 1. repo, setup, smoke test
@@ -45,6 +45,7 @@ path 1 open source and the video, tracked in docs/roadmap.md, next post-blind fi
 - readme with the scores, replay site for github pages
 - blind prs from blind-a: pr 6 promote (right), pr 7 hold on frozen code (should be abort, not shipped), answers from the author
 - roadmap for path 1 and the video in docs/roadmap.md
+- post-blind fixes: pr 7 captured again and aborted 3 of 3, eval 24 of 24, attacks 0 shipped (3 of 180 runs fooled on one attack, capped at hold)
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -152,6 +153,11 @@ path 1 open source and the video, tracked in docs/roadmap.md, next post-blind fi
 - late labels are scored with make rescore, no model calls, the verdicts stay the frozen ones
 - after the blind test: edge shift is 30 percent or more (was more than 50), a unanimous model abort stands, see adr 0010
 - eval/cases/pr-7.json is captured again with the fix, the frozen-code bundle is in git at 464d394
+- install: helm chart deploy/helm/veto is the only source, make manifests renders deploy/install.yaml, see adr 0013 and docs/install.md
+- make deploy installs the chart as release veto in ns veto with image veto:dev, keys from .env into secret veto-model
+- ci.yml runs tests, helm lint, the install.yaml drift check and kustomize. release.yml runs on a v* tag
+- tag must match version and appVersion in Chart.yaml, image ghcr.io/prashant-zo/veto, chart oci://ghcr.io/prashant-zo/charts/veto
+- first make deploy with the chart needs the old kubectl applied veto objects deleted (the pod selector changed)
 
 ## open
 - blind test prs: blind-a sent #6 and #7 and gave the answers, more friends until tuesday noon

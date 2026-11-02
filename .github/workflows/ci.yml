@@ -1,0 +1,30 @@
+# tests, and a check that the chart, install.yaml and the kustomize example still agree
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+
+  chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: chart lints
+        run: helm lint deploy/helm/veto --set model.existingSecret=veto-model --set evidence.githubRepo=your-org/your-app
+      - name: install.yaml was rendered from the current chart
+        run: make manifests && git diff --exit-code deploy/install.yaml
+      - name: kustomize example builds
+        run: kubectl kustomize deploy/kustomize/example > /dev/null

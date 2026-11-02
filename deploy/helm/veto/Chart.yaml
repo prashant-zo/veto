@@ -1,0 +1,17 @@
+apiVersion: v2
+name: veto
+description: Release gate for Argo Rollouts canaries. Checks that a canary did what its pull request says, and nothing else.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/prashant-zo/veto
+sources:
+  - https://github.com/prashant-zo/veto
+keywords:
+  - argo-rollouts
+  - canary
+  - release-gate
+  - progressive-delivery
+maintainers:
+  - name: prashant-zo
+    url: https://github.com/prashant-zo

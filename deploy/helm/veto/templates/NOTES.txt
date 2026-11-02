@@ -1,0 +1,15 @@
+Veto is running in {{ .Release.Namespace }}.
+
+Gate a rollout: add this step after the canary has had a couple of minutes of traffic.
+
+  - analysis:
+      templates:
+        - templateName: {{ .Values.analysisTemplate.name }}
+          clusterScope: true
+      args:
+        - name: namespace
+          value: <your rollout's namespace>
+        - name: rollout
+          value: <your rollout's name>
+
+Decisions: kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "veto.fullname" . }}

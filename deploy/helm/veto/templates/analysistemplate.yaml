@@ -1,0 +1,24 @@
+{{- if .Values.analysisTemplate.create }}
+# one measurement: promote is success, abort is failure, hold or pending is inconclusive,
+# so argo continues, aborts, or pauses the rollout for a person.
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterAnalysisTemplate
+metadata:
+  name: {{ .Values.analysisTemplate.name }}
+  labels:
+    {{- include "veto.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: namespace
+    - name: rollout
+  metrics:
+    - name: veto
+      count: 1
+      successCondition: result == "promote"
+      failureCondition: result == "abort"
+      provider:
+        web:
+          url: "http://{{ include "veto.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}/v1/verdict?namespace={{ "{{" }}args.namespace{{ "}}" }}&rollout={{ "{{" }}args.rollout{{ "}}" }}"
+          timeoutSeconds: {{ .Values.analysisTemplate.timeoutSeconds }}
+          jsonPath: "{$.verdict}"
+{{- end }}

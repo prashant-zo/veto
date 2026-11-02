@@ -1,0 +1,31 @@
+# example, not tested in this repo: flux installs the chart from the oci registry
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: veto
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://ghcr.io/prashant-zo/charts/veto
+  ref:
+    tag: 0.1.0
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: veto
+  namespace: veto
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: veto
+    namespace: flux-system
+  values:
+    model:
+      existingSecret: veto-model
+    evidence:
+      githubRepo: your-org/your-app

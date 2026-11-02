@@ -1,0 +1,26 @@
+# example, not tested in this repo: argo cd installs the chart straight from git
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: veto
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/prashant-zo/veto
+    targetRevision: v0.1.0
+    path: deploy/helm/veto
+    helm:
+      valuesObject:
+        model:
+          existingSecret: veto-model
+        evidence:
+          prometheusUrl: http://prometheus-server.monitoring.svc:80
+          lokiUrl: http://loki.monitoring.svc:3100
+          githubRepo: your-org/your-app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: veto
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

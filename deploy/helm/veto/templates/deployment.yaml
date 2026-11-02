@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "veto.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veto.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "veto.selector" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "veto.selector" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "veto.serviceAccount" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: veto
+          image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: VETO_PROM_URL
+              value: {{ .Values.evidence.prometheusUrl | quote }}
+            - name: VETO_LOKI_URL
+              value: {{ .Values.evidence.lokiUrl | quote }}
+            - name: VETO_GITHUB_REPO
+              value: {{ required "set evidence.githubRepo, the repo your image tags point to, like org/app" .Values.evidence.githubRepo | quote }}
+            - name: VETO_MODEL_BASE_URL
+              value: {{ .Values.model.baseUrl | quote }}
+            - name: VETO_MODEL_NAME
+              value: {{ .Values.model.name | quote }}
+            - name: VETO_MODEL_TIMEOUT
+              value: {{ .Values.model.timeoutSeconds | quote }}
+            {{- if .Values.model.fallback.baseUrl }}
+            - name: VETO_FALLBACK_BASE_URL
+              value: {{ .Values.model.fallback.baseUrl | quote }}
+            - name: VETO_FALLBACK_NAME
+              value: {{ required "set model.fallback.name too" .Values.model.fallback.name | quote }}
+            {{- end }}
+            - name: VETO_MODEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "veto.secret" . }}
+                  key: VETO_MODEL_API_KEY
+            - name: VETO_FALLBACK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "veto.secret" . }}
+                  key: VETO_FALLBACK_API_KEY
+                  optional: true
+            - name: VETO_GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "veto.secret" . }}
+                  key: VETO_GITHUB_TOKEN
+                  optional: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

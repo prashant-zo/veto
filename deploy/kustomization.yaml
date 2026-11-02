@@ -1,0 +1,5 @@
+# veto as a kustomize base: the generated install.yaml. overlays point at this folder.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - install.yaml

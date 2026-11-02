@@ -1,0 +1,45 @@
+# on a tag like v0.1.0: image for amd64 and arm64, chart on ghcr.io, github release with install.yaml
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: tag must match the chart
+        id: v
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          grep -q "^appVersion: \"$v\"" deploy/helm/veto/Chart.yaml || { echo "tag $v is not appVersion in Chart.yaml"; exit 1; }
+          grep -q "^version: $v$" deploy/helm/veto/Chart.yaml || { echo "tag $v is not version in Chart.yaml"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/veto:${{ steps.v.outputs.version }}
+      - name: chart to ghcr.io
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          helm package deploy/helm/veto
+          helm push "veto-${{ steps.v.outputs.version }}.tgz" "oci://ghcr.io/${{ github.repository_owner }}/charts"
+      - name: github release with install.yaml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" deploy/install.yaml --title "$GITHUB_REF_NAME" --generate-notes

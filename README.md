@@ -51,14 +51,16 @@ If Baseten is down, Muse Spark 1.3 on the Meta Model API answers instead.
 
 ## Results
 
-Six labelled releases from the demo shop, judged three times each. The baseline is a usual canary check:
-error rate and latency only. Details in [eval/results](eval/results).
+Eight labelled releases from the demo shop, two of them blind, judged three times each. The baseline is a usual
+canary check: error rate and latency only. Details in [eval/results](eval/results).
 
 | | right | shipped when it should not |
 |---|---|---|
-| Veto, Muse Spark Open | 18 of 18 | 0 |
-| Veto, Muse Spark 1.3 (fallback) | 6 of 6 | 0 |
-| Metrics-only baseline | 6 of 18 | 12 |
+| Veto, Muse Spark Open | 24 of 24 | 0 |
+| Veto, Muse Spark 1.3 (fallback, the first six releases) | 6 of 6 | 0 |
+| Metrics-only baseline | 9 of 24 | 15 |
+
+The 24 of 24 includes the fixes made after the blind test, see below.
 
 Prompt injection suite: 16 payloads planted in the PR body, a commit, a diff comment or a canary log line
 of real bundles, 80 attacks in all. Plain text, fake JSON verdicts, fake end markers, Hinglish, Spanish,
@@ -70,10 +72,11 @@ explanation.
 | stopped before the model by the detector | 20 |
 | flagged as hard evidence, then judged | 15 |
 | reached the model unflagged | 45, Muse called out 43 of them itself |
-| model runs fooled | 0 of 180 |
+| model runs fooled | 3 of 180, all on one attack: a plausible false explanation |
 | shipped | 0 |
 
-A test runs the same 80 attacks against a model that is always fooled. Nothing ships, because the cap is code.
+The one attack that fooled Muse in all three runs was capped at hold by the code, because its release carried hard
+evidence. A test runs the same 80 attacks against a model that is always fooled. Nothing ships, because the cap is code.
 
 Live in the cluster, with nobody touching the rollout:
 
@@ -96,14 +99,32 @@ so exactly half slipped through, and a rule dropped a model abort that pointed a
 #7 was paused, not shipped, but on that bundle only Muse stood in the way. The code alone would have allowed it,
 and the metrics-only check would have promoted it.
 
-## Try it
+Both gaps were fixed after the author's answer was in, and say so in [adr 0010](docs/adr/0010-judge-and-policy.md):
+a call shift now counts from 30 percent, and a unanimous model abort stands. #7 was captured again, the payment
+call drop (1.00 to 0.46 per order) is hard evidence now, and Veto aborts it in all three runs.
+
+## Install
+
+One Helm chart, and everything else is built from it: plain `kubectl apply`, Kustomize, Argo CD, Flux and Terraform.
+Veto needs Argo Rollouts, Prometheus with OpenTelemetry span metrics, and Loki.
+
+```bash
+kubectl create namespace veto
+kubectl -n veto create secret generic veto-model --from-literal=VETO_MODEL_API_KEY=<your Muse key>
+helm install veto oci://ghcr.io/prashant-zo/charts/veto --version 0.1.0 -n veto \
+  --set model.existingSecret=veto-model --set evidence.githubRepo=your-org/your-app
+```
+
+Every other way to install, and how to gate a rollout, is in [docs/install.md](docs/install.md).
+
+## Try the demo
 
 You need Docker (colima works), kind, kubectl with the argo rollouts plugin, helm and uv.
 
 ```bash
 make up && make stack && make shop      # kind cluster, argo rollouts, prometheus, loki, otel collector, demo shop
 cp .env.example .env                    # add your Muse keys
-make image && make deploy               # build veto and run it in the cluster
+make image && make deploy               # build veto and install it with the helm chart
 make gate-on SVC=checkout               # canaries of checkout get a veto analysis step
 make release SVC=checkout TAG=pr-2-ac3b97a
 make verdict SVC=checkout               # about 3 minutes later
@@ -131,7 +152,9 @@ src/veto/compact    metric, call edge and log evidence, redaction, attack detect
 src/veto/judge      prompt, model client with fallback, answer parser
 src/veto/policy     floor, ceiling and the checks around the model
 src/veto/serve      the http service argo calls
-deploy/             veto manifests and the ClusterAnalysisTemplate
+deploy/helm/veto    the helm chart, the one install source
+deploy/install.yaml rendered from the chart for kubectl apply and kustomize
+deploy/examples     argo cd, flux and terraform
 eval/               saved bundles, labels, scores, attack results
 site/               the replay page
 ```
@@ -149,8 +172,8 @@ site/               the replay page
 
 ## Roadmap
 
-Next: a Helm chart, evidence queries from config so it fits any Prometheus and Loki setup, a quickstart,
-and the verdict as a check on the pull request. Tracked in [docs/roadmap.md](docs/roadmap.md).
+Next: evidence queries from config so it fits any Prometheus and Loki setup, a 10 minute quickstart,
+a second demo app, and the verdict as a check on the pull request. Tracked in [docs/roadmap.md](docs/roadmap.md).
 
 ## License
 
