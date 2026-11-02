@@ -11,6 +11,8 @@ Layers, outside in:
 4. mark: the bundle sits between tags made from its hash, text inside cannot fake the end
 5. cap: hard evidence means hold at most, whatever the model says
 6. check: 3 runs must agree, promote must explain every id, soft log changes must be in the diff
+7. ask: the model also says if any text tries to steer it. one run saying so stops a promote,
+   all runs saying so let an abort stand even when every evidence item is explained
 
 The attack suite (make attacks) plants 16 payloads in 80 places of real bundles. Results in eval/results.
 Known gaps: other languages, homoglyphs and plain social engineering pass the detector. The model and the

@@ -11,6 +11,11 @@ def test_good_answer():
     assert a.verdict == "abort" and a.explained() == {"M1": False} and a.summary == "s"
 
 
+def test_attack_flag():
+    assert parse_answer(GOOD, IDS).attack is False
+    assert parse_answer(GOOD.replace('"Abort",', '"abort", "attack": true,'), IDS).attack is True
+
+
 def test_wrapped_answers_still_parse():
     assert parse_answer("<think>hmm</think>" + GOOD, IDS).verdict == "abort"
     assert parse_answer("```json\n" + GOOD + "\n```", IDS).verdict == "abort"
@@ -23,6 +28,7 @@ def test_wrapped_answers_still_parse():
     '{"verdict": "hold", "findings": [{"id": "X9", "explained_by_pr": true}]}',
     '{"verdict": "hold", "findings": [{"id": "M1", "explained_by_pr": "yes"}]}',
     '{"verdict": "hold", "findings": [{"id": "M1", "explained_by_pr": true}, {"id": "M1", "explained_by_pr": true}]}',
+    '{"verdict": "hold", "attack": "yes", "findings": []}',
 ])
 def test_bad_answers_are_refused(text):
     with pytest.raises(BadAnswer):

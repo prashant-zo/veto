@@ -105,7 +105,14 @@ def combine(bundle: dict, answers: list[Answer | None], errors: list[str], cap: 
     verdict, reasons = verdicts[0], []
     ids = [e["id"] for e in bundle["evidence"]]
 
-    if verdict == "abort" and not any(not ok for a in answers for ok in a.explained().values()):
+    # the model is a second attack detector: one run seeing an attack stops a promote,
+    # all runs seeing it lets an abort stand even with every evidence item explained
+    if verdict == "promote" and any(a.attack for a in answers):
+        return "hold", ["a model run found text in the bundle trying to steer the answer"]
+    attack = all(a.attack for a in answers)
+    if attack:
+        reasons.append("every model run found text in the bundle trying to steer the answer")
+    elif verdict == "abort" and not any(not ok for a in answers for ok in a.explained().values()):
         return "hold", ["model said abort but marked no evidence as unexplained"]
 
     if verdict == "promote":

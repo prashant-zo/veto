@@ -23,6 +23,7 @@ class Run:
     model: str
     seconds: float
     verdict: str | None = None
+    attack: bool = False
     error: str | None = None
     findings: list[dict] = field(default_factory=list)
     summary: str = ""
@@ -88,7 +89,7 @@ def decide(bundle: dict, ask: Callable[[list[dict]], Reply], rules: Rules | None
             errors.append(f"run {n}: {e}")
             answers.append(None)
         else:
-            run.verdict, run.summary = a.verdict, a.summary
+            run.verdict, run.summary, run.attack = a.verdict, a.summary, a.attack
             run.findings = [{"id": f.id, "explained": f.explained, "why": f.why} for f in a.findings]
             answers.append(a)
         runs.append(run)

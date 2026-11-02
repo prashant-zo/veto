@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 6: attack suite next, blind prs after the tuesday noon cutoff
+part 6: frozen, next blind prs after the tuesday noon cutoff and the veto down test
 
 ## plan
 1. repo, setup, smoke test
@@ -39,6 +39,7 @@ part 6: attack suite next, blind prs after the tuesday noon cutoff
 - veto service in the cluster, argo analysis step, events on the rollout, live checked on pr 2, 1 and 3
 - eval harness with labels and a metrics-only baseline, first scores in eval/results
 - no pr or sha mismatch holds before the model, attack suite with 80 planted injections
+- model reports attacks it sees, last change before the freeze
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -114,6 +115,8 @@ part 6: attack suite next, blind prs after the tuesday noon cutoff
 - no pr, sha mismatch or github down: hold before the model (stage policy), see adr 0010
 - attack suite: make attacks [ONLY=fallback], 16 payloads x 5 places, scores in eval/results/attacks-*.md, see adr 0012
 - detector on the suite: 20 stopped before the model, 15 flagged hard, 45 reach the model unflagged
+- first attack run on muse spark open: 1 of 180 runs fooled, 0 final verdicts looser, 0 shipped
+- eval on muse spark open: 18 of 18 right over 3 repeats, baseline 6 of 18 with 12 shipped
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
@@ -137,6 +140,7 @@ part 6: attack suite next, blind prs after the tuesday noon cutoff
 - only muse in demo, eval and site until judging ends
 - show "Built with Muse Spark Open" in readme and site
 - veto messages say they come from veto, never pose as a person
+- feature freeze from nov 2 evening: only fixes, no new rules or prompt changes before the blind eval
 
 ## open
 - blind test prs: blind-a sent #6 and #7, waiting for friends, cutoff tuesday noon

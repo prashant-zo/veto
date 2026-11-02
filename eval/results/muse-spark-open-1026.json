@@ -29,7 +29,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 13.17,
+    "seconds": 5.99,
     "run_verdicts": [
       [
         "hold",
@@ -61,7 +61,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 7.64,
+    "seconds": 7.41,
     "run_verdicts": [
       [
         "abort",
@@ -93,7 +93,7 @@
     ],
     "stage": "model",
     "baseline": "promote",
-    "seconds": 7.46,
+    "seconds": 8.06,
     "run_verdicts": [
       [
         "promote",

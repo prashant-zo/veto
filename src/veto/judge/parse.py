@@ -25,6 +25,7 @@ class Answer:
     verdict: str
     findings: tuple[Finding, ...]
     summary: str
+    attack: bool = False
 
     def explained(self) -> dict[str, bool]:
         return {f.id: f.explained for f in self.findings}
@@ -69,5 +70,8 @@ def parse_answer(text: str | None, ids: set[str]) -> Answer:
         seen.add(f["id"])
         why = f.get("why") if isinstance(f.get("why"), str) else ""
         findings.append(Finding(f["id"], f["explained_by_pr"], why[:MAX_WHY]))
+    attack = raw.get("attack", False)
+    if not isinstance(attack, bool):
+        raise BadAnswer("attack must be true or false")
     summary = raw.get("summary") if isinstance(raw.get("summary"), str) else ""
-    return Answer(verdict.strip().lower(), tuple(findings), summary[:MAX_SUMMARY])
+    return Answer(verdict.strip().lower(), tuple(findings), summary[:MAX_SUMMARY], attack)

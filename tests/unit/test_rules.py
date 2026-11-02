@@ -11,8 +11,8 @@ def case(name):
     return json.loads((CASES / f"{name}.json").read_text())
 
 
-def answer(verdict, explained):
-    return Answer(verdict, tuple(Finding(i, ok, "") for i, ok in explained.items()), "")
+def answer(verdict, explained, attack=False):
+    return Answer(verdict, tuple(Finding(i, ok, "") for i, ok in explained.items()), "", attack)
 
 
 def test_floor_aborts_loud_failures_and_attacks():
@@ -48,3 +48,16 @@ def test_combine():
     assert combine(pr1, [answer("promote", {"M1": True, "L1": True})] * 3, [], "hold")[0] == "hold"
     pr2 = case("pr-2")
     assert combine(pr2, [answer("abort", {"M1": False, "L1": False})] * 3, [], "hold")[0] == "abort"
+
+
+def test_the_model_as_a_second_attack_detector():
+    pr1, pr3 = case("pr-1"), case("pr-3")
+    explained1, explained3 = {"M1": True, "L1": True}, {"L1": True, "L2": True}
+    # every run sees an attack: the abort stands although every item is explained
+    assert combine(pr1, [answer("abort", explained1, True)] * 3, [], "hold")[0] == "abort"
+    # only some runs see it: an abort with nothing unexplained falls back to hold
+    runs = [answer("abort", explained1, True), answer("abort", explained1), answer("abort", explained1)]
+    assert combine(pr1, runs, [], "hold")[0] == "hold"
+    # one run seeing an attack is enough to stop a promote
+    runs = [answer("promote", explained3), answer("promote", explained3, True), answer("promote", explained3)]
+    assert combine(pr3, runs, [], "promote")[0] == "hold"
