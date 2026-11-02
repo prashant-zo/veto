@@ -23,12 +23,17 @@ def tag_of(image: str) -> str:
     return last.split(":", 1)[1] if ":" in last else ""
 
 
+def load_config(context: str | None = None) -> None:
+    """In a pod use its service account, else the local kubeconfig."""
+    try:
+        config.load_incluster_config()
+    except config.ConfigException:
+        config.load_kube_config(context=context)
+
+
 class Kube:
     def __init__(self, context: str | None = None):
-        try:
-            config.load_incluster_config()
-        except config.ConfigException:
-            config.load_kube_config(context=context)
+        load_config(context)
         self._core = client.CoreV1Api()
         self._custom = client.CustomObjectsApi()
 

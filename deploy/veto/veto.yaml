@@ -1,0 +1,108 @@
+# veto service: reads rollouts, pods, prometheus and loki, writes events. model keys come from secret veto-model.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: veto
+  namespace: veto
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: veto
+rules:
+  - apiGroups: ["argoproj.io"]
+    resources: ["rollouts"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: veto
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: veto
+subjects:
+  - kind: ServiceAccount
+    name: veto
+    namespace: veto
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: veto
+  namespace: veto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: veto
+  template:
+    metadata:
+      labels:
+        app: veto
+    spec:
+      serviceAccountName: veto
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: veto
+          image: veto:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: VETO_PROM_URL
+              value: http://prometheus-server.monitoring.svc:80
+            - name: VETO_LOKI_URL
+              value: http://loki.monitoring.svc:3100
+            - name: VETO_GITHUB_REPO
+              value: prashant-zo/veto-demo-shop
+          envFrom:
+            - secretRef:
+                name: veto-model
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: veto
+  namespace: veto
+spec:
+  selector:
+    app: veto
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

@@ -1,4 +1,4 @@
-.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all
+.PHONY: help state sync scan hooks smoke up down stack rollouts prometheus loki otel shop release abort promote test pf probe evidence bundle judge judge-all image deploy gate-on gate-off verdict serve
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -90,3 +90,34 @@ judge: ## judge a saved bundle: make judge CASE=pr-3 [ONLY=fallback]
 
 judge-all: ## judge every saved case one after another
 	@for c in $(CASES); do $(MAKE) --no-print-directory judge CASE=$$c ONLY=$(ONLY); echo; done
+
+VETO_IMAGE ?= veto:dev
+GATED = {"spec":{"strategy":{"canary":{"steps":[{"setWeight":50},{"pause":{"duration":"150s"}},{"analysis":{"templates":[{"templateName":"veto","clusterScope":true}],"args":[{"name":"namespace","value":"shop"},{"name":"rollout","value":"$(SVC)"}]}}]}}}}
+MANUAL = {"spec":{"strategy":{"canary":{"steps":[{"setWeight":50},{"pause":{}}]}}}}
+
+image: ## build the veto image and load it into kind
+	docker build -t $(VETO_IMAGE) .
+	kind load docker-image $(VETO_IMAGE) --name veto
+
+deploy: ## run veto in the cluster, model keys go from .env into secret veto-model
+	kubectl --context kind-veto apply -f deploy/veto/namespace.yaml
+	@mkdir -p .local && grep -E '^VETO_(MODEL|FALLBACK)_[A-Z_]+=|^VETO_GITHUB_TOKEN=' .env > .local/veto-secret.env
+	@if grep -q "=[\"']" .local/veto-secret.env; then rm -f .local/veto-secret.env; echo "remove the quotes around values in .env first"; exit 1; fi
+	@kubectl --context kind-veto -n veto create secret generic veto-model --from-env-file=.local/veto-secret.env --dry-run=client -o yaml | kubectl --context kind-veto apply -f -
+	@rm -f .local/veto-secret.env
+	kubectl --context kind-veto apply -f deploy/veto/ -f deploy/argo/
+	kubectl --context kind-veto -n veto rollout restart deploy/veto
+	kubectl --context kind-veto -n veto rollout status deploy/veto --timeout 120s
+
+gate-on: ## veto decides canaries of a rollout after 150s: make gate-on SVC=checkout
+	kubectl --context kind-veto -n shop patch rollout $(SVC) --type merge -p '$(GATED)'
+
+gate-off: ## back to a manual pause: make gate-off SVC=checkout
+	kubectl --context kind-veto -n shop patch rollout $(SVC) --type merge -p '$(MANUAL)'
+
+verdict: ## rollout status and the last veto event: make verdict SVC=checkout
+	-@kubectl argo rollouts --context kind-veto -n shop status $(SVC) --timeout 5s
+	@kubectl --context kind-veto -n shop get events --sort-by=.lastTimestamp -o custom-columns=REASON:.reason,MESSAGE:.message --no-headers | grep '^Veto' | tail -1
+
+serve: ## run veto on localhost:8088 against the port-forwards
+	uv run --env-file .env uvicorn veto.serve.app:app --port 8088

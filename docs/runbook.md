@@ -15,6 +15,14 @@ make abort SVC=checkout                        canary scaled down, rollout goes 
 make release SVC=checkout TAG=main-a13119d     back to Healthy on the stable tag
 make promote SVC=checkout                      or ship the canary
 
+## veto in the cluster
+make image && make deploy                      build veto, load it into kind, run it with keys from .env
+make gate-on SVC=checkout                      canaries get a veto analysis step after 150s of traffic
+make verdict SVC=checkout                      rollout status and the last veto event
+make gate-off SVC=checkout                     back to a manual pause
+kubectl -n veto logs deploy/veto               one json line per decision
+a hold pauses the rollout: make promote or make abort, a person decides
+
 ## look at data
 scripts/prom.sh '<promql>'
 scripts/loki.sh '<logql>' [since]

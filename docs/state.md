@@ -1,7 +1,7 @@
 # state
 
 ## now
-part 5: service and argo wiring
+part 6: attacks, eval and blind prs
 
 ## plan
 1. repo, setup, smoke test
@@ -36,6 +36,7 @@ part 5: service and argo wiring
 - traceback bodies skipped in loki, partial logs block a promote
 - evidence bundle with ids and hash, captured for pr 1 to 5 and the control in eval/cases
 - judge on muse spark open with meta fallback, floor, ceiling and promote checks, ai cannot approve property test
+- veto service in the cluster, argo analysis step, events on the rollout, live checked on pr 2, 1 and 3
 
 ## facts
 - mac air m1, 8 GB ram, macOS 15.8.1, arm64
@@ -100,6 +101,11 @@ part 5: service and argo wiring
 - promote needs 3 agreeing runs, every evidence id explained, and soft log items found in the diff
 - fallback model in .env as VETO_FALLBACK_BASE_URL, VETO_FALLBACK_NAME, VETO_FALLBACK_API_KEY
 - judge a saved case: make judge CASE=pr-3 [ONLY=fallback], all cases: make judge-all, decisions land in eval/runs (not in git)
+- veto service: GET /v1/verdict?namespace=&rollout=, svc veto.veto.svc:8080, one decision per canary hash kept 30m, see adr 0011
+- argo: ClusterAnalysisTemplate veto, promote is success, abort is failure, hold or pending is inconclusive and pauses
+- make image, make deploy (model keys from .env into secret veto-model), make gate-on SVC=checkout, make verdict, make gate-off
+- decision log: kubectl -n veto logs deploy/veto, one json line per decision
+- live judge latency: muse spark open 4 to 15s a run, meta fallback 5 to 12s, 3 runs in parallel
 - start a canary: make release SVC=checkout TAG=pr-1-abc1234
 - abort: make abort SVC=checkout, then make release with the stable tag to get Healthy
 - promote: make promote SVC=checkout
