@@ -27,4 +27,4 @@ jobs:
       - name: install.yaml was rendered from the current chart
         run: make manifests && git diff --exit-code deploy/install.yaml
       - name: kustomize example builds
-        run: kubectl kustomize deploy/kustomize/example > /dev/null
+        run: kubectl kustomize examples/kustomize > /dev/null

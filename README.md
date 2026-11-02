@@ -154,7 +154,7 @@ src/veto/policy     floor, ceiling and the checks around the model
 src/veto/serve      the http service argo calls
 deploy/helm/veto    the helm chart, the one install source
 deploy/install.yaml rendered from the chart for kubectl apply and kustomize
-deploy/examples     argo cd, flux and terraform
+examples/           argo cd, flux, terraform and a kustomize overlay
 eval/               saved bundles, labels, scores, attack results
 site/               the replay page
 ```

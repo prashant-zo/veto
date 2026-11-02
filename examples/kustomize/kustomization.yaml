@@ -1,8 +1,10 @@
-# an overlay for your own cluster: copy it, then change the urls and the repo
+# an overlay for your own cluster: copy it, then change the urls and the repo.
+# from your own repo, use the base as https://github.com/prashant-zo/veto//deploy?ref=v0.1.0
+# it lives outside deploy/ on purpose: kustomize refuses an overlay that sits inside its own base
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../..
+  - ../../deploy
 patches:
   - patch: |-
       apiVersion: apps/v1

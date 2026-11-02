@@ -46,13 +46,13 @@ kubectl -n veto set env deploy/veto VETO_GITHUB_REPO=your-org/your-app
 ```
 
 **Kustomize**: use `https://github.com/prashant-zo/veto//deploy?ref=v0.1.0` as a base, or copy
-[deploy/kustomize/example](../deploy/kustomize/example) and change the urls and the repo.
+[examples/kustomize](../examples/kustomize) and change the urls and the repo.
 
-**Argo CD**: [deploy/examples/argocd-application.yaml](../deploy/examples/argocd-application.yaml)
+**Argo CD**: [examples/argocd-application.yaml](../examples/argocd-application.yaml)
 
-**Flux**: [deploy/examples/flux-helmrelease.yaml](../deploy/examples/flux-helmrelease.yaml)
+**Flux**: [examples/flux-helmrelease.yaml](../examples/flux-helmrelease.yaml)
 
-**Terraform**: [deploy/examples/terraform.tf](../deploy/examples/terraform.tf)
+**Terraform**: [examples/terraform.tf](../examples/terraform.tf)
 
 Helm, kubectl and Kustomize are tested on kind. The Argo CD, Flux and Terraform files are examples.
 

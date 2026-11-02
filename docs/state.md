@@ -158,6 +158,8 @@ path 1 open source and the video, tracked in docs/roadmap.md, now the one chart 
 - ci.yml runs tests, helm lint, the install.yaml drift check and kustomize. release.yml runs on a v* tag
 - tag must match version and appVersion in Chart.yaml, image ghcr.io/prashant-zo/veto, chart oci://ghcr.io/prashant-zo/charts/veto
 - first make deploy with the chart needs the old kubectl applied veto objects deleted (the pod selector changed)
+- examples (argo cd, flux, terraform, kustomize overlay) live in examples/, kustomize refuses an overlay inside its own base
+- kubectl apply on the helm installed objects warns about last-applied-configuration, harmless, use one tool per cluster
 
 ## open
 - blind test prs: blind-a sent #6 and #7 and gave the answers, more friends until tuesday noon
