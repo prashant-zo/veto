@@ -193,6 +193,16 @@ site/               data for the replay page on github pages
 Next: evidence queries from config so it fits any Prometheus and Loki setup, a 10 minute quickstart,
 a second demo app, and the verdict as a check on the pull request. Tracked in [docs/roadmap.md](docs/roadmap.md).
 
+## Built during the hackathon
+
+Both repos were started during the event: veto on Oct 30 2026 and veto-demo-shop on Nov 1 2026. Everything in
+them is new: the evidence collectors, the attack detector, the policy, the Muse prompt and client, the service
+and its UI, the replay page, the helm chart, the eval sets and the demo shop.
+
+Not mine: Argo Rollouts, Prometheus, Loki, the OpenTelemetry Collector and kind are the open source projects Veto
+runs on. Muse Spark Open is Meta's model. PR #6 and #7 in the demo shop were written by another developer for the
+blind test. They are test input, not part of Veto.
+
 ## License
 
 Veto is Apache-2.0. Muse Spark Open is under the Muse Model License from Meta.
