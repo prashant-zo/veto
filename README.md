@@ -1,4 +1,9 @@
-# Veto
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/lockup-dark.svg">
+    <img src="docs/brand/lockup-light.svg" alt="Veto" height="56">
+  </picture>
+</h1>
 
 A release gate for Argo Rollouts canaries. Veto asks one question about every canary:
 did this release do what its pull request says, and nothing else?
